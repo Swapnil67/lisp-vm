@@ -1,4 +1,7 @@
-bm
+
+*.bm
+bmi
+ebasm
 
 playground/
 
