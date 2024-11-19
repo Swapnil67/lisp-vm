@@ -4,7 +4,7 @@ int main(int argc, char **argv) {
     // bm_load_program_from_memory(&bm, program, ARRAY_SIZE(program));
 
     if(argc < 3) {
-	fprintf(stderr, "Usage: ./ebasm <input.ebasm> <output.bm>\n");
+	fprintf(stderr, "Usage: ./basm <input.basm> <output.bm>\n");
 	fprintf(stderr, "ERROR: expected input and output\n");
 	exit(1);
     }

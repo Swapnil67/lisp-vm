@@ -1,7 +1,7 @@
 
 *.bm
-bmi
-ebasm
+bme
+basm
 
 playground/
 

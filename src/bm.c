@@ -307,18 +307,6 @@ void bm_save_program_to_file(Inst *program, size_t program_size, const char *fil
 // * VM
 Bm bm = {0};
 
-
-char *source_code =
-	"push 0\n"
-	"push 1\n"
-	"dup 1\n"
-	"dup 1\n"
-	"plus\n"
-	"jmp 2\n";
-
-
-
-
 typedef struct {
     size_t count;
     const char *data;
