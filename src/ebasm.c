@@ -17,9 +17,9 @@ int main(int argc, char **argv) {
 
     // * Interpret the program
     bm.program_size = bm_translate_source(
-    source,
-    bm.program,
-    BM_PROGRAM_CAPACITY);
+        source,
+        bm.program,
+        BM_PROGRAM_CAPACITY);
 
     // * Save the executable
     bm_save_program_to_file(bm.program, bm.program_size, output_file_path);

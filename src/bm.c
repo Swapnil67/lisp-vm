@@ -245,29 +245,29 @@ void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size) {
 void bm_load_program_from_file(Bm *bm, const char *file_path) {
     // * Open file in read binary mode
     FILE *f = fopen(file_path, "rb");
-    if(f == NULL) {
-	fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     // fseek(FILE *stream, long offset, int whence);
-    if(fseek(f, 0, SEEK_END) < 0) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (fseek(f, 0, SEEK_END) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     long m = ftell(f);
-    if(m < 0) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (m < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     assert((m % sizeof(bm->program[0])) == 0);
     assert((size_t)m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
 
-    if(fseek(f, 0, SEEK_SET) < 0) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (fseek(f, 0, SEEK_SET) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     // * Read the file into buffer
@@ -275,35 +275,34 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
     bm->program_size = fread(bm->program, sizeof(bm->program[0]), m / sizeof(bm->program[0]) , f);
 
     // * Check if any errors
-    if(ferror(f)) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
-	
+
     fclose(f);
 }
 
 // * Save the program to file
-void bm_save_program_to_file(Inst *program, size_t program_size, const	char *file_path) {
+void bm_save_program_to_file(Inst *program, size_t program_size, const char *file_path)
+{
     FILE *f  = fopen(file_path, "wb");
-    printf("%ld", sizeof(program[1])); 
-    if(f == NULL) {
-	fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    // printf("%ld", sizeof(program[1]));
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     // * size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
     fwrite(program, sizeof(program[0]), program_size, f);
-    
-    if(ferror(f)) {
-	fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
-    
 
     fclose(f);
 }
-
 
 // * VM
 Bm bm = {0};
@@ -450,45 +449,44 @@ size_t bm_translate_source(String_View source, Inst *program, size_t program_cap
     return program_size;;
 }
 
-
-String_View slurp_file(const char *file_path) {
+String_View slurp_file(const char *file_path)
+{
     FILE *f = fopen(file_path, "rb");
-    if(f == NULL) {
-	fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     // fseek(FILE *stream, long offset, int whence);
-    if(fseek(f, 0, SEEK_END) < 0) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (fseek(f, 0, SEEK_END) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     long m = ftell(f);
     if(m < 0) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     char *buffer = malloc(m);
     if(buffer == NULL) {
-	fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
-	exit(1);
+        fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
+        exit(1);
     }
 
-    if(fseek(f, 0, SEEK_SET) < 0) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (fseek(f, 0, SEEK_SET) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
 
     size_t n = fread(buffer, 1, m, f);
-    if(ferror(f)) {
-	fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-	exit(1);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
     }
-    
+
     fclose(f);
 
     return  (String_View) { .count = n, .data = buffer };
 }
-
