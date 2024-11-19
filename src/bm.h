@@ -1,14 +1,31 @@
-#include<assert.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<stdint.h>
-#include<string.h>
-#include<ctype.h>
-#include<errno.h>
+#ifndef BM_H_
+#define BM_H_
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+
+
+#define ARRAY_SIZE(xs) (sizeof(xs) / sizeof(xs[0]))
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_EXECUTION_LIMIT 69
+
+typedef enum {
+    TRAP_OK = 0,
+    ERR_STACK_OVERFLOW,
+    ERR_STACK_UNDERFLOW,
+    TRAP_ILLEGAL_INST,
+    ERR_ILLEGAL_INST_ACCESS,
+    ERR_DIV_BY_ZERO,
+    ERR_ILLEGAL_OPERAND,
+} Trap;
+
+const char *err_as_cstr(Trap err);
 
 typedef int64_t Word;
 
@@ -27,23 +44,13 @@ typedef enum {
     INST_PRINT_DEBUG,
 } Inst_Type;
 
+const char *inst_type_as_cstr(Inst_Type type);
 
 // Instruction Structure
 typedef struct {
     Inst_Type type;
     Word operand;
 } Inst;
-
-typedef enum {
-    TRAP_OK = 0,
-    ERR_STACK_OVERFLOW,
-    ERR_STACK_UNDERFLOW,
-    TRAP_ILLEGAL_INST,
-    ERR_ILLEGAL_INST_ACCESS,
-    ERR_DIV_BY_ZERO,
-    ERR_ILLEGAL_OPERAND,
-} Trap;
-
 
 // Machine Structure
 typedef struct {
@@ -57,8 +64,7 @@ typedef struct {
     int halt;
 } Bm;
 
-
-#define ARRAY_SIZE(xs) (sizeof(xs) / sizeof(xs[0]))
+// int main(int argc, char *argv[]);
 
 #define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
 #define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
@@ -67,25 +73,36 @@ typedef struct {
 #define MAKE_INST_PLUS		{ .type = INST_PLUS }
 #define MAKE_INST_MINUS()	{ .type = INST_MINUS }
 #define MAKE_INST_JMP(addr)	{ .type = INST_JMP, .operand = addr }
-#define MAKE_INST_HALT	{ .type = INST_HALT }
+#define MAKE_INST_HALT		{ .type = INST_HALT }
 
-const char *inst_type_as_cstr(Inst_Type type) {
-    switch(type) {
-    case INST_NOP:		return "INST_NOP";
-    case INST_PUSH:		return "INST_PUSH";
-    case INST_DUP:		return "INST_DUP";
-    case INST_PLUS:		return "INST_PLUS";
-    case INST_MINUS:		return "INST_MINUS";
-    case INST_DIV:		return "INST_DIV";
-    case INST_MUL:		return "INST_MUL";
-    case INST_JMP:		return "INST_JMP";
-    case INST_JMP_IF:		return "INST_JMP_IF";
-    case INST_EQ:		return "INST_EQ";
-    case INST_HALT:		return "INST_HALT";
-    case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
-    default: assert(0 && "inst_type_as_cstr: Unreachable");
-    }
-}
+
+Trap bm_execute_inst(Bm *bm);
+void bm_dump_stack(FILE *stream, const Bm *bm);
+void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
+void bm_load_program_from_file(Bm *bm, const char *file_path);
+void bm_save_program_to_file(const Bm *bm, const char *file_path);
+
+typedef struct {
+    size_t count;
+    const char *data;
+} String_View;
+
+String_View cstr_as_sv(const char *cstr);
+String_View sv_trim_left(String_View sv);
+String_View sv_trim_right(String_View sv);
+String_View sv_trim(String_View sv);
+String_View sv_chop_by_delim(String_View *sv, char delim);
+int sv_eq(String_View a, String_View b);
+int sv_to_int(String_View sv);
+String_View sv_slurp_file(const char *file_path);
+
+Inst bm_translate_line(String_View line);
+size_t bm_translate_source(String_View source, Inst *program, size_t program_capacity);
+
+#endif // BM_H_
+
+
+#ifdef BM_IMPLEMENTATION
 
 const char *trap_as_cstr(Trap trap) {
     switch(trap) {
@@ -105,12 +122,28 @@ const char *trap_as_cstr(Trap trap) {
 	return "ERR_ILLEGAL_OPERAND";
     default:
 	assert(0 && "trap_as_cstr: Unreachable");
+    }   
+}
+
+const char *inst_type_as_cstr(Inst_Type type) {
+    switch(type) {
+    case INST_NOP:		return "INST_NOP";
+    case INST_PUSH:		return "INST_PUSH";
+    case INST_DUP:		return "INST_DUP";
+    case INST_PLUS:		return "INST_PLUS";
+    case INST_MINUS:		return "INST_MINUS";
+    case INST_DIV:		return "INST_DIV";
+    case INST_MUL:		return "INST_MUL";
+    case INST_JMP:		return "INST_JMP";
+    case INST_JMP_IF:		return "INST_JMP_IF";
+    case INST_EQ:		return "INST_EQ";
+    case INST_HALT:		return "INST_HALT";
+    case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
+    default: assert(0 && "inst_type_as_cstr: Unreachable");
     }
 }
 
-
-int bm_execute_inst(Bm *bm) {
-
+Trap bm_execute_inst(Bm *bm) {
     if(bm->ip < 0 || bm->ip >= bm->program_size) {
 	return ERR_ILLEGAL_INST_ACCESS;
     }
@@ -284,7 +317,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 }
 
 // * Save the program to file
-void bm_save_program_to_file(Inst *program, size_t program_size, const char *file_path)
+void bm_save_program_to_file(const Bm *bm, const char *file_path)
 {
     FILE *f  = fopen(file_path, "wb");
     // printf("%ld", sizeof(program[1]));
@@ -294,7 +327,7 @@ void bm_save_program_to_file(Inst *program, size_t program_size, const char *fil
     }
 
     // * size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
-    fwrite(program, sizeof(program[0]), program_size, f);
+    fwrite(bm->program, sizeof(bm->program[0]), bm->program_size, f);
 
     if (ferror(f)) {
         fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
@@ -304,15 +337,7 @@ void bm_save_program_to_file(Inst *program, size_t program_size, const char *fil
     fclose(f);
 }
 
-// * VM
-Bm bm = {0};
-
-typedef struct {
-    size_t count;
-    const char *data;
-} String_View;
-
-String_View cstr_as_sv(char *cstr) {
+String_View cstr_as_sv(const char *cstr) {
     return (String_View) {
 	.count = strlen(cstr),
 	.data = cstr,
@@ -330,7 +355,6 @@ String_View sv_trim_left(String_View sv) {
 	.data = sv.data + i
     };
 }
-
 
 // * Trim spaces from right
 String_View sv_trim_right(String_View sv) {
@@ -376,6 +400,7 @@ String_View sv_chop_by_delim(String_View *sv, char delim) {
     return result;
 }
 
+
 int sv_to_int(String_View sv) {
     int result = 0;
     for(size_t i = 0; (i < sv.count && isdigit(sv.data[i])); ++i) {
@@ -392,6 +417,7 @@ int sv_eq(String_View a, String_View b) {
 	return memcmp(a.data, b.data, a.count) == 0;
     }
 }
+
 
 Inst bm_translate_line(String_View line) {
     // printf("Instruction Length: %ld\n", line.count);
@@ -424,6 +450,7 @@ Inst bm_translate_line(String_View line) {
     }
  }
 
+ 
 size_t bm_translate_source(String_View source, Inst *program, size_t program_capacity) {
     size_t program_size = 0;
     while(source.count > 0) {
@@ -437,7 +464,8 @@ size_t bm_translate_source(String_View source, Inst *program, size_t program_cap
     return program_size;;
 }
 
-String_View slurp_file(const char *file_path)
+
+String_View sv_slurp_file(const char *file_path)
 {
     FILE *f = fopen(file_path, "rb");
     if (f == NULL) {
@@ -478,3 +506,5 @@ String_View slurp_file(const char *file_path)
 
     return  (String_View) { .count = n, .data = buffer };
 }
+
+#endif // BM_IMPLEMENTATION
