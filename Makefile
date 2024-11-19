@@ -13,6 +13,6 @@ bmi: ./src/bmi.c ./src/bm.c
 .PHONY: examples
 examples: ./examples/fib.bm
 
-./examples/fib.bm: ./examples/fib.ebasm
+./examples/fib.bm: ebasm ./examples/fib.ebasm
 	./ebasm ./examples/fib.ebasm ./examples/fib.bm
 

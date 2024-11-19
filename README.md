@@ -3,6 +3,7 @@
 ## Quick Start
 
  ```console
+$ make -B
 
 $ make examples
 
