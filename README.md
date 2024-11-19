@@ -7,7 +7,7 @@ $ make -B
 
 $ make examples
 
-$ ./bme ./examples/fib.bm
+$ ./bme -i ./examples/fib.bm -l 20
 ```
 
 ### basm
