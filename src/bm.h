@@ -16,16 +16,16 @@
 #define BM_EXECUTION_LIMIT 69
 
 typedef enum {
-    TRAP_OK = 0,
+    ERR_OK = 0,
     ERR_STACK_OVERFLOW,
     ERR_STACK_UNDERFLOW,
     TRAP_ILLEGAL_INST,
     ERR_ILLEGAL_INST_ACCESS,
     ERR_DIV_BY_ZERO,
     ERR_ILLEGAL_OPERAND,
-} Trap;
+} Err;
 
-const char *err_as_cstr(Trap err);
+const char *err_as_cstr(Err err);
 
 typedef int64_t Word;
 
@@ -64,8 +64,6 @@ typedef struct {
     int halt;
 } Bm;
 
-// int main(int argc, char *argv[]);
-
 #define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
 #define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
 #define MAKE_INST_MUL()		{ .type = INST_MUL }
@@ -75,8 +73,8 @@ typedef struct {
 #define MAKE_INST_JMP(addr)	{ .type = INST_JMP, .operand = addr }
 #define MAKE_INST_HALT		{ .type = INST_HALT }
 
-
-Trap bm_execute_inst(Bm *bm);
+Err bm_execute_inst(Bm *bm);
+Err bm_execute_program(Bm *bm, int limit);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
@@ -104,10 +102,10 @@ size_t bm_translate_source(String_View source, Inst *program, size_t program_cap
 
 #ifdef BM_IMPLEMENTATION
 
-const char *trap_as_cstr(Trap trap) {
-    switch(trap) {
-    case TRAP_OK:
-	return "TRAP_OK";
+const char *err_as_cstr(Err err) {
+    switch(err) {
+    case ERR_OK:
+	return "ERR_OK";
     case ERR_STACK_OVERFLOW:
 	return "ERR_STACK_OVERFLOW";
     case ERR_STACK_UNDERFLOW:
@@ -121,7 +119,7 @@ const char *trap_as_cstr(Trap trap) {
     case ERR_ILLEGAL_OPERAND:
 	return "ERR_ILLEGAL_OPERAND";
     default:
-	assert(0 && "trap_as_cstr: Unreachable");
+	assert(0 && "err_as_cstr: Unreachable");
     }   
 }
 
@@ -143,7 +141,23 @@ const char *inst_type_as_cstr(Inst_Type type) {
     }
 }
 
-Trap bm_execute_inst(Bm *bm) {
+// * Execute basm program
+Err bm_execute_program(Bm *bm, int limit) {
+    while(limit != 0 && !bm->halt) {
+	Err err = bm_execute_inst(bm);
+	if(err != ERR_OK) {
+	    return err;
+	}
+	if(limit > 0) {
+	    --limit;
+	}
+	
+    }
+    return ERR_OK;
+}
+
+// * Execute Single Instruction
+Err bm_execute_inst(Bm *bm) {
     if(bm->ip < 0 || bm->ip >= bm->program_size) {
 	return ERR_ILLEGAL_INST_ACCESS;
     }
@@ -253,7 +267,7 @@ Trap bm_execute_inst(Bm *bm) {
 	return TRAP_ILLEGAL_INST;
     }
 
-    return TRAP_OK;
+    return ERR_OK;
 }
 
 void bm_dump_stack(FILE *stream, const Bm *bm) {
