@@ -2,6 +2,7 @@
 #include "./bm.h"
 
 Bm bm = {0};
+Label_Table lt = {0};
 
 // * Convert BASM Assembly To BASM vm executable
 
@@ -16,6 +17,15 @@ char *shift(int *argc, char ***argv) {
 
 void usage(FILE *stream, const char *program) {
     fprintf(stream, "Usage: %s <input.basm> <output.bm>\n", program);
+}
+
+
+int main2(void) {
+    String_View str = cstr_as_sv("  Swapnil Adsul\n  ");
+    // int ans = sv_eq(str, cstr_as_sv("Swapnil Adsul\n"));
+    printf("%s\n", str.data);
+    printf("%s\n", sv_trim(str).data);    
+    return 0;
 }
 
 int main(int argc, char **argv) {
@@ -39,12 +49,10 @@ int main(int argc, char **argv) {
 
     // * Read the basm file
     String_View source = sv_slurp_file(input_file_path);
-
-    // * Interpret the program
-    bm.program_size = bm_translate_source(
-        source,
-        bm.program,
-        BM_PROGRAM_CAPACITY);
+    printf("Source: \n%s\n", source.data);
+    
+    // * Translate the source in to bm virtural machine [Interpret the program]
+    bm_translate_source(source, &bm, &lt);
 
     // * Save the executable
     bm_save_program_to_file(&bm, output_file_path);

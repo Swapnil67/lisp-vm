@@ -14,6 +14,8 @@
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_EXECUTION_LIMIT 69
+#define LABEL_CAPACITY 1024
+#define UNRESOLVED_JMPS_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -85,6 +87,26 @@ typedef struct {
     const char *data;
 } String_View;
 
+
+typedef struct {
+    String_View name;
+    Word addr;
+} Label;
+
+// * Location of all the jumps that have unresolved labels
+typedef struct {
+    Word addr;
+    String_View label;
+} Unresolved_Jmp;
+
+typedef struct {
+    Label labels[LABEL_CAPACITY];
+    size_t labels_size;
+    Unresolved_Jmp unresolved_jmps[UNRESOLVED_JMPS_CAPACITY];
+    size_t unresolved_jmps_size;
+} Label_Table;
+
+
 String_View cstr_as_sv(const char *cstr);
 String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
@@ -94,8 +116,11 @@ int sv_eq(String_View a, String_View b);
 int sv_to_int(String_View sv);
 String_View sv_slurp_file(const char *file_path);
 
-Inst bm_translate_line(String_View line);
-size_t bm_translate_source(String_View source, Inst *program, size_t program_capacity);
+void bm_translate_source(String_View source, Bm *bm, Label_Table *lt);
+
+Word label_table_find(Label_Table *lt, String_View name);
+void label_table_push(Label_Table *lt, String_View name, Word addr);
+void label_table_push_unresolved_jmp(Label_Table *lt, Word addr, String_View label);
 
 #endif // BM_H_
 
@@ -372,9 +397,9 @@ String_View sv_trim_left(String_View sv) {
 
 // * Trim spaces from right
 String_View sv_trim_right(String_View sv) {
-    size_t i = sv.count - 1;
-    while(i >= 0 && isspace(sv.data[i])) {
-	i -= 1;
+    size_t i = 0;
+    while(i < sv.count && isspace(sv.data[sv.count - 1 - i])) {
+	i += 1;
     }
 
     return (String_View) {
@@ -432,48 +457,116 @@ int sv_eq(String_View a, String_View b) {
     }
 }
 
-
-Inst bm_translate_line(String_View line) {
-    // printf("Instruction Length: %ld\n", line.count);
-    
-    line = sv_trim_left(line);
-    String_View inst_name = sv_chop_by_delim(&line, ' ');
-    String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
-
-    if(sv_eq(inst_name, cstr_as_sv("push"))) {
-	line = sv_trim_left(line);
-	return (Inst) { .type = INST_PUSH, .operand = sv_to_int(operand) };
-    }
-    else if(sv_eq(inst_name, cstr_as_sv("dup"))) {
-	line = sv_trim_left(line);
-	return (Inst) { .type = INST_DUP, .operand = sv_to_int(operand) };
-    }
-    else if(sv_eq(inst_name, cstr_as_sv("plus"))) {
-	line = sv_trim_left(line);
-	return (Inst) { .type = INST_PLUS }; 
-    }
-    else if(sv_eq(inst_name, cstr_as_sv("jmp"))) {
-	line = sv_trim_left(line);
-	return (Inst) { .type = INST_JMP, .operand = sv_to_int(operand) }; 
-    }
-    else {
-	fprintf(stderr, "ERROR: unknown instruction `%.*s`\n", (int) inst_name.count, inst_name.data);
-	exit(1);
-    }
- }
-
- 
-size_t bm_translate_source(String_View source, Inst *program, size_t program_capacity) {
-    size_t program_size = 0;
-    while(source.count > 0) {
-	assert(program_size < program_capacity);
-	String_View line = sv_chop_by_delim(&source, '\n');
-	// printf("#%.*s#\n", (int) line.count, line.data);
-	if(line.count > 0 && *line.data != '#') {
-	    program[program_size++] = bm_translate_line(line);
+// * Find the address of a particular label in Label_Table 
+Word label_table_find(Label_Table *lt, String_View name) {
+    for(size_t i = 0; i < lt->labels_size; ++i) {
+	if(sv_eq(lt->labels[i].name, name)) {
+	    return lt->labels[i].addr;
 	}
     }
-    return program_size;;
+    fprintf(stderr, "ERROR: label `%.*s` does not exists\n",
+    (int) name.count, name.data);
+    exit(1);
+
+}
+
+void label_table_push(Label_Table *lt, String_View name, Word addr) {
+    assert(lt->labels_size < LABEL_CAPACITY);
+    lt->labels[lt->labels_size++] = (Label){ .name = name, .addr = addr };
+}
+
+void label_table_push_unresolved_jmp(Label_Table *lt, Word addr, String_View label) {
+    assert(lt->unresolved_jmps_size < UNRESOLVED_JMPS_CAPACITY);
+    lt->unresolved_jmps[lt->unresolved_jmps_size++] = (Unresolved_Jmp) {
+	.addr = addr,
+	.label = label
+    };
+}
+
+void print_labels(const Label_Table *lt) {
+    printf("-------- LABELS: -------\n");
+    for(size_t i = 0; i < lt->labels_size; ++i) {
+	printf("%.*s ->  %lld\n",
+	(int) lt->labels[i].name.count,
+	lt->labels[i].name.data,
+	lt->labels[i].addr);
+    }
+}
+ 
+void print_unresolved_labels(const Label_Table *lt) {
+    printf("-------- UNRESOLVED_JMPS: -------\n");
+    for(size_t i = 0; i < lt->unresolved_jmps_size; ++i) {
+	printf("%lld -> %.*s\n",
+	lt->unresolved_jmps[i].addr,
+	(int) lt->unresolved_jmps[i].label.count,
+	lt->unresolved_jmps[i].label.data);
+    }
+}
+
+void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
+    bm->program_size = 0;
+    while(source.count > 0) {
+	assert(bm->program_size < BM_PROGRAM_CAPACITY);
+	String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
+	
+	if(line.count > 0 && *line.data != '#') {
+	   // printf("#%.*s#\n", (int) line.count, line.data);
+	    
+	   String_View inst_name = sv_chop_by_delim(&line, ' ');
+	   String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
+	   
+	   // * check if there is any label
+	   if(inst_name.count > 0 && inst_name.data[inst_name.count - 1] == ':') {
+	       String_View label = {
+		  .count = inst_name.count - 1,
+		  .data = inst_name.data
+	      };
+	      label_table_push(lt, label, bm->program_size);
+	  } else if(sv_eq(inst_name, cstr_as_sv("push"))) {
+	      bm->program[bm->program_size++] = (Inst) {
+		  .type = INST_PUSH,
+		  .operand = sv_to_int(operand)
+	      };
+	  }
+	  else if(sv_eq(inst_name, cstr_as_sv("dup"))) {
+	      bm->program[bm->program_size++] = (Inst) {
+		  .type = INST_DUP,
+		  .operand = sv_to_int(operand)
+	      };
+	  }
+	 else if(sv_eq(inst_name, cstr_as_sv("plus"))) {
+	     bm->program[bm->program_size++] = (Inst) {
+		 .type = INST_PLUS,
+	     };
+	 }
+	 else if(sv_eq(inst_name, cstr_as_sv("jmp"))) {
+	     label_table_push_unresolved_jmp(lt, bm->program_size, operand);
+	     bm->program[bm->program_size++] = (Inst) {
+		 .type = INST_JMP,
+	     };
+	 }
+	 else {
+	     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
+	     (int) inst_name.count,
+	     inst_name.data);
+	      exit(1);
+	 } 
+      }
+  }
+
+ // print_labels(lt);
+ // print_unresolved_labels(lt);
+
+  // * Dereferencing the jump labels to address
+  for(size_t i = 0; i < lt->unresolved_jmps_size; ++i) {
+      Word addr = label_table_find(lt, lt->unresolved_jmps[i].label);
+      // printf("Addr : %lld\n", addr);
+      // printf("label : %s\n", lt->unresolved_jmps[i].label.data);
+      // printf("label addr : %lld\n", lt->unresolved_jmps[i].addr);
+      // printf("bm->program[6].tyep : %s\n", inst_type_as_cstr(bm->program[6].type));
+//      printf("label : %s\n", inst_type_as_cstr(bm->program[lt->unresolved_jmps[i].addr].type));
+     bm->program[lt->unresolved_jmps[i].addr].operand = addr;
+  }
 }
 
 
