@@ -1,3 +1,8 @@
+# Some nonsense
+jmp 1
+nop 
+nop
+nop
 # First two fibonacci numbers
 push 0
 push 1
