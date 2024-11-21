@@ -513,7 +513,7 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
 	   // printf("#%.*s#\n", (int) line.count, line.data);
 	    
 	   String_View inst_name = sv_chop_by_delim(&line, ' ');
-	   String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
+	   
 	   
 	   // * check if there is any label
 	   if(inst_name.count > 0 && inst_name.data[inst_name.count - 1] == ':') {
@@ -522,49 +522,60 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
 		   .data = inst_name.data
 	       };
 	       label_table_push(lt, label, bm->program_size);
-	   }	  else if(sv_eq(inst_name, cstr_as_sv("nop"))) {
-	       bm->program[bm->program_size++] = (Inst) {
-		   .type = INST_NOP,
-	       };
+
+	       // * Check any inst after ':'
+	       inst_name = sv_trim(sv_chop_by_delim(&line, ' '));
 	   }
-	   else if(sv_eq(inst_name, cstr_as_sv("push"))) {
-	       bm->program[bm->program_size++] = (Inst) {
-		   .type = INST_PUSH,
-		   .operand = sv_to_int(operand)
-	       };
-	   }
-	   else if(sv_eq(inst_name, cstr_as_sv("dup"))) {
-	       bm->program[bm->program_size++] = (Inst) {
-		   .type = INST_DUP,
-		   .operand = sv_to_int(operand)
-	       };
-	   }
-	   else if(sv_eq(inst_name, cstr_as_sv("plus"))) {
-	       bm->program[bm->program_size++] = (Inst) {
-		   .type = INST_PLUS,
-	       };
-	   }
-	   else if(sv_eq(inst_name, cstr_as_sv("jmp"))) {
-	       if(operand.count > 0 && isdigit(*operand.data)) {
-		   // * operand as absolute address
+
+	   if(inst_name.count > 0) {
+	       String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
+	       
+	       if(sv_eq(inst_name, cstr_as_sv("nop"))) {
 		   bm->program[bm->program_size++] = (Inst) {
-		       .type = INST_JMP,
-		       .operand = sv_to_int(operand),
-		   };
-	       } else {
-		   // * operand as label
-		   label_table_push_unresolved_jmp(lt, bm->program_size, operand);
-		   bm->program[bm->program_size++] = (Inst) {
-		       .type = INST_JMP,
+		       .type = INST_NOP,
 		   };
 	       }
-	   }
-	   else {
-	       fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
-	       (int) inst_name.count,
-	       inst_name.data);
-	       exit(1);
-	   } 
+	       else if(sv_eq(inst_name, cstr_as_sv("push"))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_PUSH,
+		       .operand = sv_to_int(operand)
+		   };
+	       }
+	       else if(sv_eq(inst_name, cstr_as_sv("dup"))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_DUP,
+		       .operand = sv_to_int(operand)
+		   };
+	       }
+	       else if(sv_eq(inst_name, cstr_as_sv("plus"))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_PLUS,
+		   };
+	       }
+	       else if(sv_eq(inst_name, cstr_as_sv("jmp"))) {
+		   if(operand.count > 0 && isdigit(*operand.data)) {
+		       // * operand as absolute address
+		       bm->program[bm->program_size++] = (Inst) {
+			   .type = INST_JMP,
+			   .operand = sv_to_int(operand),
+		       };
+		   } else {
+		       // * operand as label
+		       label_table_push_unresolved_jmp(lt, bm->program_size, operand);
+		       bm->program[bm->program_size++] = (Inst) {
+			   .type = INST_JMP,
+		       };
+		   }
+	       }
+	       else {
+		   
+		   fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
+		   (int) inst_name.count,
+		   inst_name.data);
+		   exit(1);
+	       }
+	       
+	  }
       }
   }
 

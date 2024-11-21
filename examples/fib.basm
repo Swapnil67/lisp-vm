@@ -7,8 +7,7 @@ nop
 push 0
 push 1
 # The Loop
-loop:
-  dup 1	# Here
+loop: dup 1	# Here
   dup 1
   plus
   jmp loop
