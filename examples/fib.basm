@@ -1,8 +1,9 @@
 # First two fibonacci numbers
 push 0
 push 1
-# loop
-dup 1	# Here
-dup 1
-plus
-jmp 2
+# The Loop
+loop:
+  dup 1	# Here
+  dup 1
+  plus
+  jmp loop
