@@ -2,12 +2,14 @@
 #include "./bm.h"
 
 Bm bm = {0};
-Label_Table lt = {0};
+Basm basm = {0};
 
 // * Convert BASM Assembly To BASM vm executable
 
+int main2(void);
+int main(int argc, char **argv);
 
-char *shift(int *argc, char ***argv) {
+static char *shift(int *argc, char ***argv) {
     assert(*argc > 0);
     char *result = **argv;
     *argv += 1;
@@ -15,7 +17,7 @@ char *shift(int *argc, char ***argv) {
     return result;
 }
 
-void usage(FILE *stream, const char *program) {
+static void usage(FILE *stream, const char *program) {
     fprintf(stream, "Usage: %s <input.basm> <output.bm>\n", program);
 }
 
@@ -52,7 +54,7 @@ int main(int argc, char **argv) {
     printf("Source: \n%s\n", source.data);
     
     // * Translate the source in to bm virtural machine [Interpret the program]
-    bm_translate_source(source, &bm, &lt);
+    bm_translate_source(source, &bm, &basm);
 
     // * Save the executable
     bm_save_program_to_file(&bm, output_file_path);

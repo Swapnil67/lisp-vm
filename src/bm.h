@@ -15,7 +15,7 @@
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_EXECUTION_LIMIT 69
 #define LABEL_CAPACITY 1024
-#define UNRESOLVED_JMPS_CAPACITY 1024
+#define DEFERED_OPERANDS_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -88,25 +88,6 @@ typedef struct {
 } String_View;
 
 
-typedef struct {
-    String_View name;
-    Word addr;
-} Label;
-
-// * Location of all the jumps that have unresolved labels
-typedef struct {
-    Word addr;
-    String_View label;
-} Unresolved_Jmp;
-
-typedef struct {
-    Label labels[LABEL_CAPACITY];
-    size_t labels_size;
-    Unresolved_Jmp unresolved_jmps[UNRESOLVED_JMPS_CAPACITY];
-    size_t unresolved_jmps_size;
-} Label_Table;
-
-
 String_View cstr_as_sv(const char *cstr);
 String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
@@ -116,11 +97,33 @@ int sv_eq(String_View a, String_View b);
 int sv_to_int(String_View sv);
 String_View sv_slurp_file(const char *file_path);
 
-void bm_translate_source(String_View source, Bm *bm, Label_Table *lt);
 
-Word label_table_find(Label_Table *lt, String_View name);
-void label_table_push(Label_Table *lt, String_View name, Word addr);
-void label_table_push_unresolved_jmp(Label_Table *lt, Word addr, String_View label);
+typedef struct {
+    String_View name;
+    Word addr;
+} Label;
+
+// * Location of all the jumps that have unresolved labels
+typedef struct {
+    // * address of an inst the operand of which refers to a label
+    Word addr;
+    String_View label;
+} Defered_Operand;
+
+typedef struct {
+    Label labels[LABEL_CAPACITY];
+    size_t labels_size;
+    Defered_Operand defered_operands[DEFERED_OPERANDS_CAPACITY];
+    size_t defered_operands_size;
+} Basm;
+
+Word basm_find_label_addr(Basm *basm, String_View name);
+void basm_push_label(Basm *basm, String_View name, Word addr);
+void basm_push_defered_operand(Basm *basm, Word addr, String_View label);
+void print_unresolved_labels(const Basm *basm);
+void print_labels(const Basm *basm);
+
+void bm_translate_source(String_View source, Bm *bm, Basm *basm);
 
 #endif // BM_H_
 
@@ -457,11 +460,11 @@ int sv_eq(String_View a, String_View b) {
     }
 }
 
-// * Find the address of a particular label in Label_Table 
-Word label_table_find(Label_Table *lt, String_View name) {
-    for(size_t i = 0; i < lt->labels_size; ++i) {
-	if(sv_eq(lt->labels[i].name, name)) {
-	    return lt->labels[i].addr;
+// * Find the address of a particular label in Basm 
+Word basm_find_label_addr(Basm *basm, String_View name) {
+    for(size_t i = 0; i < basm->labels_size; ++i) {
+	if(sv_eq(basm->labels[i].name, name)) {
+	    return basm->labels[i].addr;
 	}
     }
     fprintf(stderr, "ERROR: label `%.*s` does not exists\n",
@@ -470,40 +473,40 @@ Word label_table_find(Label_Table *lt, String_View name) {
 
 }
 
-void label_table_push(Label_Table *lt, String_View name, Word addr) {
-    assert(lt->labels_size < LABEL_CAPACITY);
-    lt->labels[lt->labels_size++] = (Label){ .name = name, .addr = addr };
+void basm_push_label(Basm *basm, String_View name, Word addr) {
+    assert(basm->labels_size < LABEL_CAPACITY);
+    basm->labels[basm->labels_size++] = (Label){ .name = name, .addr = addr };
 }
 
-void label_table_push_unresolved_jmp(Label_Table *lt, Word addr, String_View label) {
-    assert(lt->unresolved_jmps_size < UNRESOLVED_JMPS_CAPACITY);
-    lt->unresolved_jmps[lt->unresolved_jmps_size++] = (Unresolved_Jmp) {
+void basm_push_defered_operand(Basm *basm, Word addr, String_View label) {
+    assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
+    basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand) {
 	.addr = addr,
 	.label = label
     };
 }
 
-void print_labels(const Label_Table *lt) {
+void print_labels(const Basm *basm) {
     printf("-------- LABELS: -------\n");
-    for(size_t i = 0; i < lt->labels_size; ++i) {
+    for(size_t i = 0; i < basm->labels_size; ++i) {
 	printf("%.*s ->  %lld\n",
-	(int) lt->labels[i].name.count,
-	lt->labels[i].name.data,
-	lt->labels[i].addr);
+	(int) basm->labels[i].name.count,
+	basm->labels[i].name.data,
+	basm->labels[i].addr);
     }
 }
  
-void print_unresolved_labels(const Label_Table *lt) {
+void print_unresolved_labels(const Basm *basm) {
     printf("-------- UNRESOLVED_JMPS: -------\n");
-    for(size_t i = 0; i < lt->unresolved_jmps_size; ++i) {
+    for(size_t i = 0; i < basm->defered_operands_size; ++i) {
 	printf("%lld -> %.*s\n",
-	lt->unresolved_jmps[i].addr,
-	(int) lt->unresolved_jmps[i].label.count,
-	lt->unresolved_jmps[i].label.data);
+	basm->defered_operands[i].addr,
+	(int) basm->defered_operands[i].label.count,
+	basm->defered_operands[i].label.data);
     }
 }
 
-void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
+void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
     bm->program_size = 0;
     while(source.count > 0) {
 	assert(bm->program_size < BM_PROGRAM_CAPACITY);
@@ -521,7 +524,7 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
 		   .count = inst_name.count - 1,
 		   .data = inst_name.data
 	       };
-	       label_table_push(lt, label, bm->program_size);
+	       basm_push_label(basm, label, bm->program_size);
 
 	       // * Check any inst after ':'
 	       inst_name = sv_trim(sv_chop_by_delim(&line, ' '));
@@ -561,7 +564,7 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
 		       };
 		   } else {
 		       // * operand as label
-		       label_table_push_unresolved_jmp(lt, bm->program_size, operand);
+		       basm_push_defered_operand(basm, bm->program_size, operand);
 		       bm->program[bm->program_size++] = (Inst) {
 			   .type = INST_JMP,
 		       };
@@ -583,15 +586,15 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt) {
  // print_unresolved_labels(lt);
 
   // * Dereferencing the jump labels to address
-  for(size_t i = 0; i < lt->unresolved_jmps_size; ++i) {
-      Word addr = label_table_find(lt, lt->unresolved_jmps[i].label);
+  for(size_t i = 0; i < basm->defered_operands_size; ++i) {
+      Word addr = basm_find_label_addr(basm, basm->defered_operands[i].label);
       // printf("Addr : %lld\n", addr);
-      // printf("label : %s\n", lt->unresolved_jmps[i].label.data);
-      // printf("label addr : %lld\n", lt->unresolved_jmps[i].addr);
+      // printf("label : %s\n", basm->defered_operands[i].label.data);
+      // printf("label addr : %lld\n", basm->defered_operands[i].addr);
       // printf("bm->program[6].tyep : %s\n", inst_type_as_cstr(bm->program[6].type));
-//      printf("label : %s\n", inst_type_as_cstr(bm->program[lt->unresolved_jmps[i].addr].type));
-     bm->program[lt->unresolved_jmps[i].addr].operand = addr;
-  }
+//      printf("label : %s\n", inst_type_as_cstr(bm->program[basm->defered_operands[i].addr].type));
+     bm->program[basm->defered_operands[i].addr].operand = addr;
+ }
 }
 
 
