@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
     // * Read the basm file
     String_View source = sv_slurp_file(input_file_path);
-    printf("Source: \n%s\n", source.data);
+    // printf("Source: \n%s\n", source.data);
     
     // * Translate the source in to bm virtural machine [Interpret the program]
     bm_translate_source(source, &bm, &basm);

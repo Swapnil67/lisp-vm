@@ -582,8 +582,8 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
       }
   }
 
- // print_labels(lt);
- // print_unresolved_labels(lt);
+ print_labels(basm);
+ print_unresolved_labels(basm);
 
   // * Dereferencing the jump labels to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
