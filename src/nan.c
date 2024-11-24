@@ -179,11 +179,9 @@ int main(void) {
 //     printf("Address of a:  %p\n",(void*) &a);
 //     uint64_t* b = (uint64_t*)&a;
 //     printf("Long Int: %llu\n", *b);
-    
 //     uint8_t *bytes = (uint8_t*)&a;
 //     print_bits(bytes, sizeof(a));
 //     // printf("first byte: %d\n", bytes[0]);
 //     // printf("first byte: %x\n", bytes[0]);
-
 // }
 
