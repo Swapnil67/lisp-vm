@@ -33,7 +33,7 @@
 // Mantissa [0 - 51 bits] => 52 bits
 #define FRACTION_MASK ((1LL << 52LL) - 1LL)
 // 63rd bit
-#define SIGN_MASK (1LL - 63LL)
+#define SIGN_MASK 1LL << 63LL
 // First four bits of Mantissa
 #define TYPE_MASK (((1LL << 4LL) - 1LL) << 48LL)
 // 1st 48 bits of mantissa where value is stored
@@ -148,11 +148,6 @@ double box_pointer(void* x) {
     return set_value(set_type(mk_inf(), TYPE(POINTER_TYPE)), (uint64_t)  x);
 }
 
-
-#define VALUES_CAPACITY 256
-double values[VALUES_CAPACITY];
-size_t values_size = 0;
-    
 int main(void) {
 
     const double pi = 3.14159265359;
@@ -170,18 +165,3 @@ int main(void) {
     
     return 0;
 }
-
-
-// int main(void) {
-//     printf("Pointer Conversions\n");
-//     double a = 10.10;
-//     printf("Long Double: %f\n", a);
-//     printf("Address of a:  %p\n",(void*) &a);
-//     uint64_t* b = (uint64_t*)&a;
-//     printf("Long Int: %llu\n", *b);
-//     uint8_t *bytes = (uint8_t*)&a;
-//     print_bits(bytes, sizeof(a));
-//     // printf("first byte: %d\n", bytes[0]);
-//     // printf("first byte: %x\n", bytes[0]);
-// }
-

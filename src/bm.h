@@ -127,7 +127,6 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm);
 
 #endif // BM_H_
 
-
 #ifdef BM_IMPLEMENTATION
 
 const char *err_as_cstr(Err err) {
@@ -415,49 +414,43 @@ String_View sv_trim(String_View sv) {
     return sv_trim_right(sv_trim_left(sv));
 }
 
-
 String_View sv_chop_by_delim(String_View *sv, char delim) {
+	size_t i = 0;
+	while (i < sv->count && sv->data[i] != delim) {
+		i += 1;
+	}
 
-    size_t i = 0;
-    while(i < sv->count && sv->data[i] != delim) {
-	i += 1;
-    }
+	String_View result = {
+		.count = i,
+		.data = sv->data,
+	};
 
-//    printf("%ld - %ld\n", sv->count, i); 
+	if (i < sv->count) {
+		sv->count -= i + 1;
+		sv->data += i + 1;
+	}
+	else {
+		sv->count -= i;
+		sv->data += i;
+	}
 
-    String_View result = {
-	.count = i,
-	.data = sv->data,
-    };
-    
-    if(i < sv->count) {
-	sv->count -= i + 1;
-	sv->data += i + 1;
-    }
-    else {
-	sv->count -= i;
-	sv->data += i;
-    }
-
-    return result;
+	return result;
 }
 
-
 int sv_to_int(String_View sv) {
-    int result = 0;
-    for(size_t i = 0; (i < sv.count && isdigit(sv.data[i])); ++i) {
-	result = result * 10 + sv.data[i] - '0';
-    }
-    return result;
+	int result = 0;
+	for (size_t i = 0; (i < sv.count && isdigit(sv.data[i])); ++i) {
+		result = result * 10 + sv.data[i] - '0';
+	}
+	return result;
 }
 
 int sv_eq(String_View a, String_View b) {
-    if(a.count != b.count) {
-	return 0;
-    }
-    else {
-	return memcmp(a.data, b.data, a.count) == 0;
-    }
+	if (a.count != b.count) {
+		return 0;
+	} else {
+		return memcmp(a.data, b.data, a.count) == 0;
+	}
 }
 
 // * Find the address of a particular label in Basm 
@@ -596,7 +589,6 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
      bm->program[basm->defered_operands[i].addr].operand = addr;
  }
 }
-
 
 String_View sv_slurp_file(const char *file_path)
 {
