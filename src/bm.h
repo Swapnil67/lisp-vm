@@ -29,8 +29,6 @@ typedef enum {
 
 const char *err_as_cstr(Err err);
 
-typedef int64_t Word;
-
 typedef enum {
     INST_NOP = 0,
     INST_PUSH,
@@ -47,6 +45,16 @@ typedef enum {
 } Inst_Type;
 
 const char *inst_type_as_cstr(Inst_Type type);
+typedef uint64_t Inst_Addr;
+
+typedef union {
+    uint64_t as_u64;
+    int64_t as_i64;
+    double as_f64;
+    void *as_ptr;
+} Word;
+
+static_assert(sizeof(Word) == 8, "The BM's Word is expected to be 64 bits");
 
 // Instruction Structure
 typedef struct {
@@ -57,11 +65,11 @@ typedef struct {
 // Machine Structure
 typedef struct {
     Word stack[BM_STACK_CAPACITY];
-    Word stack_size;
+    uint64_t stack_size;
     
     Inst program[BM_PROGRAM_CAPACITY];
-    Word program_size;
-    Word ip;
+    uint64_t program_size;
+    Inst_Addr ip;
     
     int halt;
 } Bm;
@@ -100,13 +108,13 @@ String_View sv_slurp_file(const char *file_path);
 
 typedef struct {
     String_View name;
-    Word addr;
+    Inst_Addr addr;
 } Label;
 
 // * Location of all the jumps that have unresolved labels
 typedef struct {
     // * address of an inst the operand of which refers to a label
-    Word addr;
+    Inst_Addr addr;
     String_View label;
 } Defered_Operand;
 
@@ -117,9 +125,9 @@ typedef struct {
     size_t defered_operands_size;
 } Basm;
 
-Word basm_find_label_addr(Basm *basm, String_View name);
-void basm_push_label(Basm *basm, String_View name, Word addr);
-void basm_push_defered_operand(Basm *basm, Word addr, String_View label);
+Inst_Addr basm_find_label_addr(Basm *basm, String_View name);
+void basm_push_label(Basm *basm, String_View name, Inst_Addr addr);
+void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label);
 void print_unresolved_labels(const Basm *basm);
 void print_labels(const Basm *basm);
 
@@ -207,16 +215,12 @@ Err bm_execute_inst(Bm *bm) {
 	    return ERR_STACK_OVERFLOW;
 	}
 	
-	if(bm->stack_size - inst.operand <= 0) {
+	if(bm->stack_size - inst.operand.as_u64 <= 0) {
 	    return ERR_STACK_UNDERFLOW;
 	}
 
-	if(inst.operand < 0) {
-	    return ERR_ILLEGAL_OPERAND;
-	}
-
 	// * Push the operand to the top of stack  [Operand relative to current stack position]
-	bm->stack[bm->stack_size] = bm->stack[bm->stack_size - 1 - inst.operand];
+	bm->stack[bm->stack_size].as_u64 = bm->stack[bm->stack_size - 1 - inst.operand.as_u64].as_u64;
 	bm->stack_size += 1;
 	bm->ip += 1;
 	break;
@@ -224,7 +228,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 2] += bm->stack[bm->stack_size - 1];
+	bm->stack[bm->stack_size - 2].as_u64 += bm->stack[bm->stack_size - 1].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -232,7 +236,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 2] -= bm->stack[bm->stack_size - 1];
+	bm->stack[bm->stack_size - 2].as_u64 -= bm->stack[bm->stack_size - 1].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -240,7 +244,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 2] *= bm->stack[bm->stack_size - 1];
+	bm->stack[bm->stack_size - 2].as_u64 *= bm->stack[bm->stack_size - 1].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -248,24 +252,24 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	if(bm->stack[bm->stack_size - 1] == 0) {
+	if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
 	    return ERR_DIV_BY_ZERO;
 	}
-	bm->stack[bm->stack_size - 2] /= bm->stack[bm->stack_size - 1];
+	bm->stack[bm->stack_size - 2].as_u64 /= bm->stack[bm->stack_size - 1].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
     case INST_JMP:
-	bm->ip = inst.operand;
+	bm->ip = inst.operand.as_u64;
 	break;
     case INST_JMP_IF:
 	if(bm->stack_size < 1) {
 	    return ERR_STACK_UNDERFLOW;
 	}
 	// * If top of the stack it True
-	if(bm->stack[bm->stack_size - 1]) {
+	if(bm->stack[bm->stack_size - 1].as_u64) {
 	    bm->stack_size -= 1;
-	    bm->ip = inst.operand;
+	    bm->ip = inst.operand.as_u64;
 	}
 	else {
 	    bm->ip += 1;
@@ -275,7 +279,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 2] = bm->stack[bm->stack_size - 1] == bm->stack[bm->stack_size-2];
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 == bm->stack[bm->stack_size-2].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -287,7 +291,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 1) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	printf("%lld", bm->stack[bm->stack_size - 1]);
+	printf("%llu", bm->stack[bm->stack_size - 1].as_u64);
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -301,12 +305,17 @@ Err bm_execute_inst(Bm *bm) {
 void bm_dump_stack(FILE *stream, const Bm *bm) {
     fprintf(stream, "Stack:\n");
     if(bm->stack_size > 0) {
-	for(Word i = 0; i < bm->stack_size; ++i) {
-	    fprintf(stream, "  %lld\n", bm->stack[i]);
-       }
-   } else {
-       fprintf(stream, "  [empty]\n");
-   }
+	for(Inst_Addr i = 0; i < bm->stack_size; ++i) {
+	    fprintf(stream, "u64:  %llu, i64: %lld, f64: %lf, ptr: %p\n",
+				bm->stack[i].as_u64,
+				bm->stack[i].as_i64,
+				bm->stack[i].as_f64,
+				bm->stack[i].as_ptr);
+	}
+    } else {
+	fprintf(stream, "  [empty]\n");
+    }
+    
 }
 
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size) {
@@ -461,7 +470,7 @@ int sv_eq(String_View a, String_View b) {
 }
 
 // * Find the address of a particular label in Basm 
-Word basm_find_label_addr(Basm *basm, String_View name) {
+Inst_Addr basm_find_label_addr(Basm *basm, String_View name) {
     for(size_t i = 0; i < basm->labels_size; ++i) {
 	if(sv_eq(basm->labels[i].name, name)) {
 	    return basm->labels[i].addr;
@@ -473,12 +482,12 @@ Word basm_find_label_addr(Basm *basm, String_View name) {
 
 }
 
-void basm_push_label(Basm *basm, String_View name, Word addr) {
+void basm_push_label(Basm *basm, String_View name, Inst_Addr addr) {
     assert(basm->labels_size < LABEL_CAPACITY);
     basm->labels[basm->labels_size++] = (Label){ .name = name, .addr = addr };
 }
 
-void basm_push_defered_operand(Basm *basm, Word addr, String_View label) {
+void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label) {
     assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
     basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand) {
 	.addr = addr,
@@ -489,7 +498,7 @@ void basm_push_defered_operand(Basm *basm, Word addr, String_View label) {
 void print_labels(const Basm *basm) {
     printf("-------- LABELS: -------\n");
     for(size_t i = 0; i < basm->labels_size; ++i) {
-	printf("%.*s ->  %lld\n",
+	printf("%.*s ->  %llu\n",
 	(int) basm->labels[i].name.count,
 	basm->labels[i].name.data,
 	basm->labels[i].addr);
@@ -541,13 +550,13 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	       else if(sv_eq(inst_name, cstr_as_sv("push"))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PUSH,
-		       .operand = sv_to_int(operand)
+		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };
 	       }
 	       else if(sv_eq(inst_name, cstr_as_sv("dup"))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_DUP,
-		       .operand = sv_to_int(operand)
+		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };
 	       }
 	       else if(sv_eq(inst_name, cstr_as_sv("plus"))) {
@@ -560,7 +569,7 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		       // * operand as absolute address
 		       bm->program[bm->program_size++] = (Inst) {
 			   .type = INST_JMP,
-			   .operand = sv_to_int(operand),
+			   .operand = { .as_i64 = sv_to_int(operand) },
 		       };
 		   } else {
 		       // * operand as label
@@ -587,13 +596,13 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 
   // * Dereferencing the jump labels to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
-      Word addr = basm_find_label_addr(basm, basm->defered_operands[i].label);
+      Inst_Addr addr = basm_find_label_addr(basm, basm->defered_operands[i].label);
       // printf("Addr : %lld\n", addr);
       // printf("label : %s\n", basm->defered_operands[i].label.data);
       // printf("label addr : %lld\n", basm->defered_operands[i].addr);
       // printf("bm->program[6].tyep : %s\n", inst_type_as_cstr(bm->program[6].type));
 //      printf("label : %s\n", inst_type_as_cstr(bm->program[basm->defered_operands[i].addr].type));
-     bm->program[basm->defered_operands[i].addr].operand = addr;
+     bm->program[basm->defered_operands[i].addr].operand.as_u64 = addr;
  }
 }
 

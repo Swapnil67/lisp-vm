@@ -15,16 +15,16 @@ int main(int argc, char **argv) {
     const char *input_file_path = argv[1];
     bm_load_program_from_file(&bm, input_file_path);
 
-    for(Word i = 0; i < bm.program_size; ++i) {
+    for(Inst_Addr i = 0; i < bm.program_size; ++i) {
 	switch(bm.program[i].type) {
 	case INST_NOP:
 	    printf("nop\n");
 	    break;
         case INST_PUSH:
-	    printf("push %lld\n", bm.program[i].operand);
+	    printf("push %lld\n", bm.program[i].operand.as_i64);
 	    break;
 	case INST_DUP:
-	    printf("dup %lld\n", bm.program[i].operand);
+	    printf("dup %lld\n", bm.program[i].operand.as_i64);
 	    break;
 	case INST_PLUS:
 	    printf("plus\n");
@@ -39,10 +39,10 @@ int main(int argc, char **argv) {
 	    printf("div\n");
 	    break;
 	case INST_JMP:
-	    printf("jmp %lld\n", bm.program[i].operand);
+	    printf("jmp %lld\n", bm.program[i].operand.as_i64);
 	    break;
 	case INST_JMP_IF:
-	    printf("jmp_if %lld\n", bm.program[i].operand);
+	    printf("jmp_if %lld\n", bm.program[i].operand.as_i64);
 	    break;
 	case INST_EQ:
 	    printf("eq\n");
