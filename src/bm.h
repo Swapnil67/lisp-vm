@@ -53,51 +53,8 @@ typedef enum {
     NUMBER_OF_INSTS
 } Inst_Type;
 
-const char *inst_name(Inst_Type type) {
-    switch(type) {
-    case INST_NOP:		return "nop";
-    case INST_PUSH:		return "push";
-    case INST_DUP:		return "dup";
-    case INST_PLUSI:		return "plusi";
-    case INST_MINUSI:		return "minusi";
-    case INST_MULI:		return "muli";
-    case INST_DIVI:		return "divi";
-    case INST_PLUSF:		return "plusf";
-    case INST_MINUSF:		return "minusf";
-    case INST_MULF:		return "mulf";
-    case INST_DIVF:		return "divf";	
-    case INST_JMP:		return "jmp";
-    case INST_JMP_IF:		return "jmp_if";
-    case INST_EQ:		return "eq";
-    case INST_HALT:		return "halt";
-    case INST_PRINT_DEBUG:	return "print_debug";
-    default:
-	assert(0 && "inst_name: unreachable");
-    }
-};
-
-int inst_has_operand(Inst_Type type) {
-    switch(type) {
-    case INST_NOP:		return 0;
-    case INST_PUSH:		return 1;
-    case INST_DUP:		return 1;
-    case INST_PLUSI:		return 0;
-    case INST_MINUSI:		return 0;
-    case INST_MULI:		return 0;
-    case INST_DIVI:		return 0;
-    case INST_PLUSF:		return 0;
-    case INST_MINUSF:		return 0;
-    case INST_MULF:		return 0;
-    case INST_DIVF:		return 0;	
-    case INST_JMP:		return 1;
-    case INST_JMP_IF:		return 1;
-    case INST_EQ:		return 0;
-    case INST_HALT:		return 0;
-    case INST_PRINT_DEBUG:	return 0;
-    default:
-	assert(0 && "inst_name: unreachable");
-    }
-}
+const char *inst_name(Inst_Type type);
+int inst_has_operand(Inst_Type type);
 
 
 const char *inst_type_as_cstr(Inst_Type type);
@@ -161,7 +118,6 @@ int sv_eq(String_View a, String_View b);
 int sv_to_int(String_View sv);
 String_View sv_slurp_file(const char *file_path);
 
-
 typedef struct {
     String_View name;
     Inst_Addr addr;
@@ -188,6 +144,7 @@ void print_unresolved_labels(const Basm *basm);
 void print_labels(const Basm *basm);
 
 void bm_translate_source(String_View source, Bm *bm, Basm *basm);
+Word number_literal_as_word(String_View sv);
 
 #endif // BM_H_
 
@@ -220,7 +177,7 @@ const char *inst_type_as_cstr(Inst_Type type) {
 	case INST_NOP:		return "INST_NOP";
 	case INST_PUSH:		return "INST_PUSH";
 	case INST_DUP:		return "INST_DUP";
-    
+
 	case INST_PLUSI:	return "INST_PLUSI";
 	case INST_MINUSI:	return "INST_MINUSI";
 	case INST_DIVI:		return "INST_DIVI";
@@ -230,7 +187,7 @@ const char *inst_type_as_cstr(Inst_Type type) {
 	case INST_MINUSF:	return "INST_MINUSF";
 	case INST_DIVF:		return "INST_DIVF";
 	case INST_MULF:		return "INST_MULF";
-    
+
 	case INST_JMP:		return "INST_JMP";
 	case INST_JMP_IF:	return "INST_JMP_IF";
 	case INST_EQ:		return "INST_EQ";
@@ -238,8 +195,59 @@ const char *inst_type_as_cstr(Inst_Type type) {
 	case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
 	case NUMBER_OF_INSTS:
 	default: assert(0 && "inst_type_as_cstr: Unreachable");
-	}
+    }
 }
+
+
+const char *inst_name(Inst_Type type) {
+    switch(type) {
+    case INST_NOP:		return "nop";
+    case INST_PUSH:		return "push";
+    case INST_DUP:		return "dup";
+    case INST_PLUSI:		return "plusi";
+    case INST_MINUSI:		return "minusi";
+    case INST_MULI:		return "muli";
+    case INST_DIVI:		return "divi";
+    case INST_PLUSF:		return "plusf";
+    case INST_MINUSF:		return "minusf";
+    case INST_MULF:		return "mulf";
+    case INST_DIVF:		return "divf";	
+    case INST_JMP:		return "jmp";
+    case INST_JMP_IF:		return "jmp_if";
+    case INST_EQ:		return "eq";
+    case INST_HALT:		return "halt";
+    case INST_PRINT_DEBUG:	return "print_debug";
+    case NUMBER_OF_INSTS:
+    default:
+	assert(0 && "inst_name: unreachable");
+    }
+}
+
+
+int inst_has_operand(Inst_Type type) {
+    switch(type) {
+    case INST_NOP:		return 0;
+    case INST_PUSH:		return 1;
+    case INST_DUP:		return 1;
+    case INST_PLUSI:		return 0;
+    case INST_MINUSI:		return 0;
+    case INST_MULI:		return 0;
+    case INST_DIVI:		return 0;
+    case INST_PLUSF:		return 0;
+    case INST_MINUSF:		return 0;
+    case INST_MULF:		return 0;
+    case INST_DIVF:		return 0;	
+    case INST_JMP:		return 1;
+    case INST_JMP_IF:		return 1;
+    case INST_EQ:		return 0;
+    case INST_HALT:		return 0;
+    case INST_PRINT_DEBUG:	return 0;
+    case NUMBER_OF_INSTS:
+    default:
+	assert(0 && "inst_has_operand: unreachable");
+    }
+}
+
 
 // * Execute basm program
 Err bm_execute_program(Bm *bm, int limit) {
@@ -339,6 +347,22 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
+    case INST_MULF:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_f64 *= bm->stack[bm->stack_size - 1].as_f64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+    case INST_DIVF:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_f64 /= bm->stack[bm->stack_size - 1].as_f64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;	
     case INST_JMP:
 	bm->ip = inst.operand.as_u64;
 	break;
@@ -596,6 +620,31 @@ void print_unresolved_labels(const Basm *basm) {
     }
 }
 
+Word number_literal_as_word(String_View sv) {
+    assert(sv.count < 1024);
+    char cstr[sv.count + 1];
+    char *endptr = 0;
+    
+    memcpy(cstr, sv.data, sv.count);
+    cstr[sv.count] = '\0';
+
+    Word result = {0};
+
+    // * Try to parse it as uint64_t first
+    result.as_u64 = strtoull(cstr, &endptr, 10);
+
+    if((size_t)(endptr - cstr) != sv.count) {
+	// * Try to parse it as double
+	result.as_f64 = strtod(cstr, &endptr);
+	if((size_t)(endptr - cstr) != sv.count) {
+	    fprintf(stderr, "ERROR: `%s` is not a number literal\n", cstr);
+	    exit(1);
+	}
+    }
+    
+    return result;
+}
+
 void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
     bm->program_size = 0;
     while(source.count > 0) {
@@ -630,7 +679,7 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PUSH)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PUSH,
-		       .operand = { .as_i64 = sv_to_int(operand) }
+		       .operand = number_literal_as_word(operand)
 		   };
 	       }
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_DUP)))) {
@@ -664,13 +713,27 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		       .type = INST_PLUSF,
 		   };
 	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_MINUSF)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_MINUSF,
+		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_MULF)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_MULF,
+		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_DIVF)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_DIVF,
+		   };
+	       }	       
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_HALT)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_HALT,
 		   };		   
 	       }
 	       else {
-		   
 		   fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
 		   (int) token.count, token.data);
 		   exit(1);
