@@ -9,5 +9,5 @@ push 1
 # The Loop
 loop: dup 1	# Here
   dup 1
-  plus
+  plusi
   jmp loop

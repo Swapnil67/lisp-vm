@@ -16,44 +16,11 @@ int main(int argc, char **argv) {
     bm_load_program_from_file(&bm, input_file_path);
 
     for(Inst_Addr i = 0; i < bm.program_size; ++i) {
-	switch(bm.program[i].type) {
-	case INST_NOP:
-	    printf("nop\n");
-	    break;
-        case INST_PUSH:
-	    printf("push %lld\n", bm.program[i].operand.as_i64);
-	    break;
-	case INST_DUP:
-	    printf("dup %lld\n", bm.program[i].operand.as_i64);
-	    break;
-	case INST_PLUS:
-	    printf("plus\n");
-	    break;
-	case INST_MINUS:
-	    printf("minus\n");
-	    break;
-	case INST_MUL:
-	    printf("mul\n");
-	    break;
-	case INST_DIV:
-	    printf("div\n");
-	    break;
-	case INST_JMP:
-	    printf("jmp %lld\n", bm.program[i].operand.as_i64);
-	    break;
-	case INST_JMP_IF:
-	    printf("jmp_if %lld\n", bm.program[i].operand.as_i64);
-	    break;
-	case INST_EQ:
-	    printf("eq\n");
-	    break;
-	case INST_HALT:
-	    printf("halt\n");
-	    break;
-	case INST_PRINT_DEBUG:
-	    printf("print_debug\n");
-	    break;
+	printf("%s ", inst_names[bm.program[i].type]);
+	if(inst_has_operand[bm.program[i].type]) {
+	    printf(" %lld", bm.program[i].operand.as_i64);
 	}
+	printf("\n");
     }
     
     return 0;

@@ -33,16 +33,38 @@ typedef enum {
     INST_NOP = 0,
     INST_PUSH,
     INST_DUP,
-    INST_PLUS,
-    INST_MINUS,
-    INST_MUL,
-    INST_DIV,
+    INST_PLUSI,
+    INST_MINUSI,
+    INST_MULI,
+    INST_DIVI,
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
     INST_HALT,
     INST_PRINT_DEBUG,
 } Inst_Type;
+
+const char *inst_names[] = {
+    [INST_NOP]		= "nop",
+    [INST_PUSH]		= "push",
+    [INST_DUP]		= "dup",
+    [INST_PLUSI]	= "plusi",
+    [INST_MINUSI]	= "minusi",
+    [INST_MULI]		= "muli",
+    [INST_DIVI]		= "divi",
+    [INST_JMP]		= "jmp",
+    [INST_JMP_IF]	= "jmp_if",
+    [INST_EQ]		= "eq",
+    [INST_HALT]		= "halt",
+    [INST_PRINT_DEBUG]	= "print_debug",
+};
+
+const int inst_has_operand[] = {
+    [INST_PUSH]		= 1,
+    [INST_DUP]		= 1,
+    [INST_JMP]		= 1,
+    [INST_JMP_IF]	= 1,
+};
 
 const char *inst_type_as_cstr(Inst_Type type);
 typedef uint64_t Inst_Addr;
@@ -76,10 +98,10 @@ typedef struct {
 
 #define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
 #define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
-#define MAKE_INST_MUL()		{ .type = INST_MUL }
-#define MAKE_INST_DIV()		{ .type = INST_DIV }
-#define MAKE_INST_PLUS		{ .type = INST_PLUS }
-#define MAKE_INST_MINUS()	{ .type = INST_MINUS }
+#define MAKE_INST_MULI()		{ .type = INST_MULI }
+#define MAKE_INST_DIVI()		{ .type = INST_DIVI }
+#define MAKE_INST_PLUSI		{ .type = INST_PLUSI }
+#define MAKE_INST_MINUSI()	{ .type = INST_MINUSI }
 #define MAKE_INST_JMP(addr)	{ .type = INST_JMP, .operand = addr }
 #define MAKE_INST_HALT		{ .type = INST_HALT }
 
@@ -164,10 +186,10 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_NOP:		return "INST_NOP";
     case INST_PUSH:		return "INST_PUSH";
     case INST_DUP:		return "INST_DUP";
-    case INST_PLUS:		return "INST_PLUS";
-    case INST_MINUS:		return "INST_MINUS";
-    case INST_DIV:		return "INST_DIV";
-    case INST_MUL:		return "INST_MUL";
+    case INST_PLUSI:		return "INST_PLUSI";
+    case INST_MINUSI:		return "INST_MINUSI";
+    case INST_DIVI:		return "INST_DIVI";
+    case INST_MULI:		return "INST_MULI";
     case INST_JMP:		return "INST_JMP";
     case INST_JMP_IF:		return "INST_JMP_IF";
     case INST_EQ:		return "INST_EQ";
@@ -224,7 +246,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size += 1;
 	bm->ip += 1;
 	break;
-    case INST_PLUS:
+    case INST_PLUSI:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
@@ -232,7 +254,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
-    case INST_MINUS:
+    case INST_MINUSI:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
@@ -240,7 +262,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
-    case INST_MUL:
+    case INST_MULI:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
@@ -248,7 +270,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
-    case INST_DIV:
+    case INST_DIVI:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
@@ -526,7 +548,6 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	    
 	   String_View inst_name = sv_chop_by_delim(&line, ' ');
 	   
-	   
 	   // * check if there is any label
 	   if(inst_name.count > 0 && inst_name.data[inst_name.count - 1] == ':') {
 	       String_View label = {
@@ -542,29 +563,29 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	   if(inst_name.count > 0) {
 	       String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
 	       
-	       if(sv_eq(inst_name, cstr_as_sv("nop"))) {
+	       if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_NOP]))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_NOP,
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv("push"))) {
+	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_PUSH]))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PUSH,
 		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv("dup"))) {
+	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_DUP]))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_DUP,
 		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv("plus"))) {
+	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_PLUSI]))) {
 		   bm->program[bm->program_size++] = (Inst) {
-		       .type = INST_PLUS,
+		       .type = INST_PLUSI,
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv("jmp"))) {
+	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_JMP]))) {
 		   if(operand.count > 0 && isdigit(*operand.data)) {
 		       // * operand as absolute address
 		       bm->program[bm->program_size++] = (Inst) {
