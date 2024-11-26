@@ -33,38 +33,72 @@ typedef enum {
     INST_NOP = 0,
     INST_PUSH,
     INST_DUP,
+    
     INST_PLUSI,
     INST_MINUSI,
     INST_MULI,
     INST_DIVI,
+
+    INST_PLUSF,
+    INST_MINUSF,
+    INST_MULF,
+    INST_DIVF,
+        
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
     INST_HALT,
     INST_PRINT_DEBUG,
+
+    NUMBER_OF_INSTS
 } Inst_Type;
 
-const char *inst_names[] = {
-    [INST_NOP]		= "nop",
-    [INST_PUSH]		= "push",
-    [INST_DUP]		= "dup",
-    [INST_PLUSI]	= "plusi",
-    [INST_MINUSI]	= "minusi",
-    [INST_MULI]		= "muli",
-    [INST_DIVI]		= "divi",
-    [INST_JMP]		= "jmp",
-    [INST_JMP_IF]	= "jmp_if",
-    [INST_EQ]		= "eq",
-    [INST_HALT]		= "halt",
-    [INST_PRINT_DEBUG]	= "print_debug",
+const char *inst_name(Inst_Type type) {
+    switch(type) {
+    case INST_NOP:		return "nop";
+    case INST_PUSH:		return "push";
+    case INST_DUP:		return "dup";
+    case INST_PLUSI:		return "plusi";
+    case INST_MINUSI:		return "minusi";
+    case INST_MULI:		return "muli";
+    case INST_DIVI:		return "divi";
+    case INST_PLUSF:		return "plusf";
+    case INST_MINUSF:		return "minusf";
+    case INST_MULF:		return "mulf";
+    case INST_DIVF:		return "divf";	
+    case INST_JMP:		return "jmp";
+    case INST_JMP_IF:		return "jmp_if";
+    case INST_EQ:		return "eq";
+    case INST_HALT:		return "halt";
+    case INST_PRINT_DEBUG:	return "print_debug";
+    default:
+	assert(0 && "inst_name: unreachable");
+    }
 };
 
-const int inst_has_operand[] = {
-    [INST_PUSH]		= 1,
-    [INST_DUP]		= 1,
-    [INST_JMP]		= 1,
-    [INST_JMP_IF]	= 1,
-};
+int inst_has_operand(Inst_Type type) {
+    switch(type) {
+    case INST_NOP:		return 0;
+    case INST_PUSH:		return 1;
+    case INST_DUP:		return 1;
+    case INST_PLUSI:		return 0;
+    case INST_MINUSI:		return 0;
+    case INST_MULI:		return 0;
+    case INST_DIVI:		return 0;
+    case INST_PLUSF:		return 0;
+    case INST_MINUSF:		return 0;
+    case INST_MULF:		return 0;
+    case INST_DIVF:		return 0;	
+    case INST_JMP:		return 1;
+    case INST_JMP_IF:		return 1;
+    case INST_EQ:		return 0;
+    case INST_HALT:		return 0;
+    case INST_PRINT_DEBUG:	return 0;
+    default:
+	assert(0 && "inst_name: unreachable");
+    }
+}
+
 
 const char *inst_type_as_cstr(Inst_Type type);
 typedef uint64_t Inst_Addr;
@@ -183,20 +217,28 @@ const char *err_as_cstr(Err err) {
 
 const char *inst_type_as_cstr(Inst_Type type) {
     switch(type) {
-    case INST_NOP:		return "INST_NOP";
-    case INST_PUSH:		return "INST_PUSH";
-    case INST_DUP:		return "INST_DUP";
-    case INST_PLUSI:		return "INST_PLUSI";
-    case INST_MINUSI:		return "INST_MINUSI";
-    case INST_DIVI:		return "INST_DIVI";
-    case INST_MULI:		return "INST_MULI";
-    case INST_JMP:		return "INST_JMP";
-    case INST_JMP_IF:		return "INST_JMP_IF";
-    case INST_EQ:		return "INST_EQ";
-    case INST_HALT:		return "INST_HALT";
-    case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
-    default: assert(0 && "inst_type_as_cstr: Unreachable");
-    }
+	case INST_NOP:		return "INST_NOP";
+	case INST_PUSH:		return "INST_PUSH";
+	case INST_DUP:		return "INST_DUP";
+    
+	case INST_PLUSI:	return "INST_PLUSI";
+	case INST_MINUSI:	return "INST_MINUSI";
+	case INST_DIVI:		return "INST_DIVI";
+	case INST_MULI:		return "INST_MULI";
+
+	case INST_PLUSF:	return "INST_PLUSF";
+	case INST_MINUSF:	return "INST_MINUSF";
+	case INST_DIVF:		return "INST_DIVF";
+	case INST_MULF:		return "INST_MULF";
+    
+	case INST_JMP:		return "INST_JMP";
+	case INST_JMP_IF:	return "INST_JMP_IF";
+	case INST_EQ:		return "INST_EQ";
+	case INST_HALT:		return "INST_HALT";
+	case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
+	case NUMBER_OF_INSTS:
+	default: assert(0 && "inst_type_as_cstr: Unreachable");
+	}
 }
 
 // * Execute basm program
@@ -216,7 +258,7 @@ Err bm_execute_program(Bm *bm, int limit) {
 
 // * Execute Single Instruction
 Err bm_execute_inst(Bm *bm) {
-    if(bm->ip < 0 || bm->ip >= bm->program_size) {
+    if(bm->ip >= bm->program_size) {
 	return ERR_ILLEGAL_INST_ACCESS;
     }
     
@@ -281,6 +323,22 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
+    case INST_PLUSF:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_f64 += bm->stack[bm->stack_size - 1].as_f64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+    case INST_MINUSF:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_f64 -= bm->stack[bm->stack_size - 1].as_f64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
     case INST_JMP:
 	bm->ip = inst.operand.as_u64;
 	break;
@@ -317,6 +375,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
+    case NUMBER_OF_INSTS:
     default:
 	return TRAP_ILLEGAL_INST;
     }
@@ -546,46 +605,46 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	if(line.count > 0 && *line.data != '#') {
 	   // printf("#%.*s#\n", (int) line.count, line.data);
 	    
-	   String_View inst_name = sv_chop_by_delim(&line, ' ');
+	   String_View token = sv_chop_by_delim(&line, ' ');
 	   
 	   // * check if there is any label
-	   if(inst_name.count > 0 && inst_name.data[inst_name.count - 1] == ':') {
+	   if(token.count > 0 && token.data[token.count - 1] == ':') {
 	       String_View label = {
-		   .count = inst_name.count - 1,
-		   .data = inst_name.data
+		   .count = token.count - 1,
+		   .data = token.data
 	       };
 	       basm_push_label(basm, label, bm->program_size);
 
 	       // * Check any inst after ':'
-	       inst_name = sv_trim(sv_chop_by_delim(&line, ' '));
+	       token = sv_trim(sv_chop_by_delim(&line, ' '));
 	   }
 
-	   if(inst_name.count > 0) {
+	   if(token.count > 0) {
 	       String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
 	       
-	       if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_NOP]))) {
+	       if(sv_eq(token, cstr_as_sv(inst_name(INST_NOP)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_NOP,
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_PUSH]))) {
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PUSH)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PUSH,
 		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_DUP]))) {
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_DUP)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_DUP,
 		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_PLUSI]))) {
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PLUSI)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PLUSI,
 		   };
 	       }
-	       else if(sv_eq(inst_name, cstr_as_sv(inst_names[INST_JMP]))) {
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_JMP)))) {
 		   if(operand.count > 0 && isdigit(*operand.data)) {
 		       // * operand as absolute address
 		       bm->program[bm->program_size++] = (Inst) {
@@ -600,11 +659,20 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		       };
 		   }
 	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PLUSF)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_PLUSF,
+		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_HALT)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_HALT,
+		   };		   
+	       }
 	       else {
 		   
 		   fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
-		   (int) inst_name.count,
-		   inst_name.data);
+		   (int) token.count, token.data);
 		   exit(1);
 	       }
 	       
@@ -612,8 +680,8 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
       }
   }
 
- print_labels(basm);
- print_unresolved_labels(basm);
+ // print_labels(basm);
+//  print_unresolved_labels(basm);
 
   // * Dereferencing the jump labels to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
