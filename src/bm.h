@@ -48,6 +48,8 @@ typedef enum {
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
+    INST_NOT,
+    INST_GEF,
     INST_HALT,
     INST_PRINT_DEBUG,
 
@@ -193,6 +195,8 @@ const char *inst_type_as_cstr(Inst_Type type) {
 	case INST_JMP:		return "INST_JMP";
 	case INST_JMP_IF:	return "INST_JMP_IF";
 	case INST_EQ:		return "INST_EQ";
+	case INST_NOT:		return "INST_NOT";
+	case INST_GEF:		return "INST_GEF";
 	case INST_HALT:		return "INST_HALT";
 	case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
 	case NUMBER_OF_INSTS:
@@ -218,6 +222,8 @@ const char *inst_name(Inst_Type type) {
     case INST_JMP:		return "jmp";
     case INST_JMP_IF:		return "jmp_if";
     case INST_EQ:		return "eq";
+    case INST_NOT :		return "not";
+    case INST_GEF :		return "gef";
     case INST_HALT:		return "halt";
     case INST_PRINT_DEBUG:	return "print_debug";
     case NUMBER_OF_INSTS:
@@ -244,6 +250,8 @@ int inst_has_operand(Inst_Type type) {
     case INST_JMP:		return 1;
     case INST_JMP_IF:		return 1;
     case INST_EQ:		return 0;
+    case INST_NOT:		return 0;
+    case INST_GEF:		return 0;
     case INST_HALT:		return 0;
     case INST_PRINT_DEBUG:	return 0;
     case NUMBER_OF_INSTS:
@@ -255,97 +263,111 @@ int inst_has_operand(Inst_Type type) {
 
 // * Execute basm program
 Err bm_execute_program(Bm *bm, int limit) {
-	while (limit != 0 && !bm->halt) {
-		// printf("bm->stack_size %lld\n", bm->stack_size);
-		Err err = bm_execute_inst(bm);
-		if (err != ERR_OK) {
+    while (limit != 0 && !bm->halt) {
+	Err err = bm_execute_inst(bm);
+	if (err != ERR_OK) {
 	    return err;
-		}
-		if(limit > 0) {
-			--limit;
-		}
 	}
-	// printf("bm->stack_size final: %lld\n", bm->stack_size);
-	// printf("bm->ip final: %lld\n", bm->ip);
-	return ERR_OK;
+	if(limit > 0) {
+	    --limit;
+	}
+    }
+    return ERR_OK;
 }
 
 // * Execute Single Instruction
 Err bm_execute_inst(Bm *bm) {
-	if (bm->ip >= bm->program_size) {
-		return ERR_ILLEGAL_INST_ACCESS;
-	}
+    if (bm->ip >= bm->program_size) {
+	return ERR_ILLEGAL_INST_ACCESS;
+    }
 
-	// * Take the instruction to execute
-	Inst inst = bm->program[bm->ip];
-	switch(inst.type) {
-	case INST_NOP:
+    // * Take the instruction to execute
+    Inst inst = bm->program[bm->ip];
+    
+    switch(inst.type) {
+    case INST_NOP:
 	bm->ip += 1;
 	break;
-	case INST_PUSH:
-		if(bm->stack_size >= BM_STACK_CAPACITY) {
-				return ERR_STACK_OVERFLOW;
-		}
-		bm->stack[bm->stack_size++] = inst.operand;
-		bm->ip += 1;
-	break;
-	case INST_DUP:
-		if(bm->stack_size >= BM_STACK_CAPACITY) {
-			return ERR_STACK_OVERFLOW;
-		}
-		if(bm->stack_size - inst.operand.as_u64 <= 0) {
-			return ERR_STACK_UNDERFLOW;
-		}
-		printf("bm->stack_size dup %lld\n", bm->stack_size);
-		// * Push the operand to the top of stack  [Operand relative to current stack position]
-		bm->stack[bm->stack_size].as_u64 = bm->stack[bm->stack_size - 1 - inst.operand.as_u64].as_u64;
-		bm->stack_size += 1;
-		bm->ip += 1;
-	break;
-    case INST_SWAP:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
+	
+    case INST_PUSH:
+	if(bm->stack_size >= BM_STACK_CAPACITY) {
+	    return ERR_STACK_OVERFLOW;
 	}
-	Word t = bm->stack[bm->stack_size - 1];
-	bm->stack[bm->stack_size - 1] = bm->stack[bm->stack_size - 2];
-	bm->stack[bm->stack_size - 2] = t;
+	bm->stack[bm->stack_size++] = inst.operand;
 	bm->ip += 1;
 	break;
-    case INST_PLUSI:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 += bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
-    case INST_MINUSI:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 -= bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
-    case INST_MULI:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 *= bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
-    case INST_DIVI:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
-	    return ERR_DIV_BY_ZERO;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 /= bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
+
+    case INST_DUP:
+       if(bm->stack_size >= BM_STACK_CAPACITY) {
+	   return ERR_STACK_OVERFLOW;
+       }
+
+       if(bm->stack_size - inst.operand.as_u64 <= 0) {
+	   return ERR_STACK_UNDERFLOW;    
+       }
+
+       // * Push the operand to the top of stack  [Operand relative to current stack position]
+       const uint64_t idx = bm->stack_size - 1 - inst.operand.as_u64;
+       bm->stack[bm->stack_size].as_u64 = bm->stack[idx].as_u64;
+       bm->stack_size += 1;
+       bm->ip += 1;
+       break;
+
+   case INST_SWAP:
+       if(inst.operand.as_u64 >= bm->stack_size) {
+	   return ERR_STACK_UNDERFLOW;
+       }
+
+       const uint64_t a = bm->stack_size - 1;
+       const uint64_t b = bm->stack_size - 1 - inst.operand.as_u64;
+
+       Word t = bm->stack[a];
+       bm->stack[a] = bm->stack[b];
+       bm->stack[b] = t;
+
+       bm->ip += 1;
+       break;
+
+
+   case INST_PLUSI:
+       if(bm->stack_size < 2) {
+	   return ERR_STACK_UNDERFLOW;
+       }
+       bm->stack[bm->stack_size - 2].as_u64 += bm->stack[bm->stack_size - 1].as_u64;
+       bm->stack_size -= 1;
+       bm->ip += 1;
+       break;
+
+   case INST_MINUSI:
+      if(bm->stack_size < 2) {
+	  return ERR_STACK_UNDERFLOW;
+      }
+      bm->stack[bm->stack_size - 2].as_u64 -= bm->stack[bm->stack_size - 1].as_u64;
+      bm->stack_size -= 1;
+      bm->ip += 1;
+      break;
+
+  case INST_MULI:
+      if(bm->stack_size < 2) {
+	  return ERR_STACK_UNDERFLOW;
+      }
+      bm->stack[bm->stack_size - 2].as_u64 *= bm->stack[bm->stack_size - 1].as_u64;
+      bm->stack_size -= 1;
+      bm->ip += 1;
+      break;
+
+  case INST_DIVI:
+      if(bm->stack_size < 2) {
+	  return ERR_STACK_UNDERFLOW;
+      }
+      if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
+	  return ERR_DIV_BY_ZERO;
+      }
+      bm->stack[bm->stack_size - 2].as_u64 /= bm->stack[bm->stack_size - 1].as_u64;
+      bm->stack_size -= 1;
+      bm->ip += 1;
+      break;
+	  
     case INST_PLUSF:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
@@ -354,6 +376,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
+	
     case INST_MINUSF:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
@@ -363,7 +386,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->ip += 1;
 	break;
 
-	case INST_MULF:
+    case INST_MULF:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
@@ -372,7 +395,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->ip += 1;
 	break;
 
-	case INST_DIVF:
+    case INST_DIVF:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
@@ -381,50 +404,80 @@ Err bm_execute_inst(Bm *bm) {
 	bm->ip += 1;
 	break;	
 
-	case INST_JMP:
+    case INST_JMP:
 	bm->ip = inst.operand.as_u64;
 	break;
 
-	case INST_JMP_IF:
-	if(bm->stack_size < 1) {
-		return ERR_STACK_UNDERFLOW;
-	}
-	// * If top of the stack it True
-	if(bm->stack[bm->stack_size - 1].as_u64) {
-		bm->stack_size -= 1;
-		bm->ip = inst.operand.as_u64;
-	}
-	else {
-		bm->ip += 1;
-	}
-	break;
-
-	case INST_EQ:
-		if(bm->stack_size < 2) {
-				return ERR_STACK_UNDERFLOW;
-		}
-		bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 == bm->stack[bm->stack_size-2].as_u64;
-		bm->stack_size -= 1;
-		bm->ip += 1;
-	break;
-
-	case INST_HALT:
-		bm->halt = 1;
-	break;
-
-    case INST_PRINT_DEBUG:
+    case INST_JMP_IF:
 	if(bm->stack_size < 1) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	printf("%llu", bm->stack[bm->stack_size - 1].as_u64);
+	// * If top of the stack it True
+	if(bm->stack[bm->stack_size - 1].as_u64) {
+	    bm->ip = inst.operand.as_u64;
+	}
+	else {
+	    bm->ip += 1;
+	}
+	bm->stack_size -= 1;
+	break;
+
+    case INST_EQ:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	uint64_t a1 = bm->stack_size - 1;
+	uint64_t b1 = bm->stack_size - 2;
+	bm->stack[b1].as_u64 = bm->stack[a1].as_u64 == bm->stack[b1].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
+
+    case INST_GEF:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	uint64_t a2 = bm->stack_size - 1;
+	uint64_t b2 = bm->stack_size - 2;
+	bm->stack[b2].as_u64 = bm->stack[a2].as_u64 >= bm->stack[b2].as_u64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+
+
+    case INST_NOT:
+	if(bm->stack_size < 1) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	uint64_t st_top = bm->stack_size - 1;
+	bm->stack[st_top].as_u64 = !bm->stack[st_top].as_u64;
+	bm->ip += 1;
+	break;
+
+
+    case INST_HALT:
+	bm->halt = 1;
+	break;
+
+    case INST_PRINT_DEBUG:	    
+	if(bm->stack_size < 1) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	fprintf(stdout, "u64:  %llu, i64: %lld, f64: %lf, ptr: %p\n",	
+	    bm->stack[bm->stack_size - 1].as_u64,	
+	    bm->stack[bm->stack_size - 1].as_i64,
+	    bm->stack[bm->stack_size - 1].as_f64,
+	    bm->stack[bm->stack_size - 1].as_ptr);
+
+		  
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+
     case NUMBER_OF_INSTS:
     default:
 	return TRAP_ILLEGAL_INST;
     }
-
     return ERR_OK;
 }
 
@@ -728,6 +781,21 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_DIVI,
 		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_EQ)))) {		   
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_EQ,
+		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_GEF)))) {		   
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_GEF,
+		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_NOT)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_NOT,
+		   };
 	       }	       
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_JMP)))) {
 		   if(operand.count > 0 && isdigit(*operand.data)) {
@@ -741,6 +809,21 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		       basm_push_defered_operand(basm, bm->program_size, operand);
 		       bm->program[bm->program_size++] = (Inst) {
 			   .type = INST_JMP,
+		       };
+		   }
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_JMP_IF)))) {
+		   if(operand.count > 0 && isdigit(*operand.data)) {
+		       // * operand as absolute address
+		       bm->program[bm->program_size++] = (Inst) {
+			   .type = INST_JMP_IF,
+			   .operand = { .as_i64 = sv_to_int(operand) },
+		       };
+		   } else {
+		       // * operand as label
+		       basm_push_defered_operand(basm, bm->program_size, operand);
+		       bm->program[bm->program_size++] = (Inst) {
+			   .type = INST_JMP_IF,
 		       };
 		   }
 	       }
@@ -772,8 +855,14 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_SWAP)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_SWAP,
+		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };		   
-	       }	       
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_PRINT_DEBUG
+		   };		   
+	       }
 	       else {
 		   fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
 		   (int) token.count, token.data);

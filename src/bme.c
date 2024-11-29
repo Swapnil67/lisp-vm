@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     
     if(!debug) {
 	Err err = bm_execute_program(&bm, limit);
-	bm_dump_stack(stdout, &bm);
+	// bm_dump_stack(stdout, &bm);
 	if (err != ERR_OK) {
 	    fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
 	    return 1;
@@ -82,9 +82,9 @@ int main(int argc, char **argv) {
 	    bm_dump_stack(stdout, &bm);
 
 	    getchar();
-	    
-	    printf("bm->stack_size %lld\n", bm.stack_size);
-	    Err err = bm_execute_inst(&bm);
+	    Err err = bm_execute_inst(&bm);	    
+	    // printf("bm->stack_size %lld\n", bm.stack_size);
+
 	    if (err != ERR_OK) {
 		fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
 		return 1;
