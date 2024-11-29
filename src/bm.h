@@ -177,30 +177,31 @@ const char *err_as_cstr(Err err) {
 
 const char *inst_type_as_cstr(Inst_Type type) {
     switch(type) {
-	case INST_NOP:		return "INST_NOP";
-	case INST_PUSH:		return "INST_PUSH";
-	case INST_DUP:		return "INST_DUP";
-	case INST_SWAP:		return "INST_SWAP";
+    case INST_NOP:		return "INST_NOP";
+    case INST_PUSH:		return "INST_PUSH";
+    case INST_DUP:		return "INST_DUP";
+    case INST_SWAP:		return "INST_SWAP";
 
-	case INST_PLUSI:	return "INST_PLUSI";
-	case INST_MINUSI:	return "INST_MINUSI";
-	case INST_DIVI:		return "INST_DIVI";
-	case INST_MULI:		return "INST_MULI";
+    case INST_PLUSI:		return "INST_PLUSI";
+    case INST_MINUSI:		return "INST_MINUSI";
+    case INST_DIVI:		return "INST_DIVI";
+    case INST_MULI:		return "INST_MULI";
 
-	case INST_PLUSF:	return "INST_PLUSF";
-	case INST_MINUSF:	return "INST_MINUSF";
-	case INST_DIVF:		return "INST_DIVF";
-	case INST_MULF:		return "INST_MULF";
+    case INST_PLUSF:		return "INST_PLUSF";
+    case INST_MINUSF:		return "INST_MINUSF";
+    case INST_DIVF:		return "INST_DIVF";
+    case INST_MULF:		return "INST_MULF";
 
-	case INST_JMP:		return "INST_JMP";
-	case INST_JMP_IF:	return "INST_JMP_IF";
-	case INST_EQ:		return "INST_EQ";
-	case INST_NOT:		return "INST_NOT";
-	case INST_GEF:		return "INST_GEF";
-	case INST_HALT:		return "INST_HALT";
-	case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
-	case NUMBER_OF_INSTS:
-	default: assert(0 && "inst_type_as_cstr: Unreachable");
+    case INST_JMP:		return "INST_JMP";
+    case INST_JMP_IF:		return "INST_JMP_IF";
+    case INST_EQ:		return "INST_EQ";
+    case INST_NOT:		return "INST_NOT";
+    case INST_GEF:		return "INST_GEF";
+    case INST_HALT:		return "INST_HALT";
+    case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
+    case NUMBER_OF_INSTS:
+    default:
+	assert(0 && "inst_type_as_cstr: Unreachable");
     }
 }
 
