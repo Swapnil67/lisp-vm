@@ -16,6 +16,7 @@
 #define BM_EXECUTION_LIMIT 69
 #define LABEL_CAPACITY 1024
 #define DEFERED_OPERANDS_CAPACITY 1024
+#define BM_NATIVES_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -48,6 +49,7 @@ typedef enum {
     INST_DROP,
     INST_RET,
     INST_CALL,
+    INST_NATIVE,
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
@@ -81,17 +83,24 @@ typedef struct {
     Word operand;
 } Inst;
 
+typedef struct Bm Bm;
+
+typedef Err (*Bm_Native)(Bm*);
+
 // Machine Structure
-typedef struct {
+struct Bm {
     Word stack[BM_STACK_CAPACITY];
     uint64_t stack_size;
     
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
     Inst_Addr ip;
-    
+
+    Bm_Native natives[BM_NATIVES_CAPACITY];
+    size_t natives_size;
+
     int halt;
-} Bm;
+};
 
 #define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
 #define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
@@ -104,6 +113,7 @@ typedef struct {
 
 Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
+void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
@@ -198,6 +208,7 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_DROP:		return "INST_DROP";
     case INST_RET:		return "INST_RET";
     case INST_CALL:		return "INST_CALL";
+    case INST_NATIVE:		return "INST_NATIVE";
     case INST_JMP:		return "INST_JMP";
     case INST_JMP_IF:		return "INST_JMP_IF";
     case INST_EQ:		return "INST_EQ";
@@ -229,6 +240,7 @@ const char *inst_name(Inst_Type type) {
     case INST_DROP:		return "drop";
     case INST_RET:		return "ret";
     case INST_CALL:		return "call";
+    case INST_NATIVE:		return "native";
     case INST_JMP:		return "jmp";
     case INST_JMP_IF:		return "jmp_if";
     case INST_EQ:		return "eq";
@@ -260,6 +272,7 @@ int inst_has_operand(Inst_Type type) {
     case INST_DROP:		return 0;
     case INST_RET:		return 0;
     case INST_CALL:		return 1;
+    case INST_NATIVE:		return 1;
     case INST_JMP:		return 1;
     case INST_JMP_IF:		return 1;
     case INST_EQ:		return 0;
@@ -392,7 +405,6 @@ Err bm_execute_inst(Bm *bm) {
       break;
 	  
   case INST_PLUSF:
-      
      if(bm->stack_size < 2) {
 	 return ERR_STACK_UNDERFLOW;
      }
@@ -445,6 +457,16 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack[bm->stack_size++].as_u64 = bm->ip + 1;
 	// * jump to the address of function
 	bm->ip = inst.operand.as_u64;
+	break;
+	
+    case INST_NATIVE:
+	// * Trying to return non existing native function
+	if(inst.operand.as_u64 > bm->natives_size) {
+	    return ERR_ILLEGAL_OPERAND;
+	}
+	// * call the native functions
+	bm->natives[inst.operand.as_u64](bm);
+	bm->ip += 1;
 	break;
 
     case INST_JMP:
@@ -522,6 +544,11 @@ Err bm_execute_inst(Bm *bm) {
 	return TRAP_ILLEGAL_INST;
     }
     return ERR_OK;
+}
+
+void bm_push_native(Bm *bm, Bm_Native native) {
+    assert(bm->natives_size < BM_NATIVES_CAPACITY);
+    bm->natives[bm->natives_size++] = native;
 }
 
 void bm_dump_stack(FILE *stream, const Bm *bm) {
@@ -928,6 +955,12 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_RET
+		   };		   
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_NATIVE)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_NATIVE,
+		       .operand = { .as_i64 = sv_to_int(operand) }
 		   };		   
 	       }
 	       else {
