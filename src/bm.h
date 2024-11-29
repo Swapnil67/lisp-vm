@@ -44,7 +44,10 @@ typedef enum {
     INST_MINUSF,
     INST_MULF,
     INST_DIVF,
-        
+
+    INST_DROP,
+    INST_RET,
+    INST_CALL,
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
@@ -92,8 +95,8 @@ typedef struct {
 
 #define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
 #define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
-#define MAKE_INST_MULI()		{ .type = INST_MULI }
-#define MAKE_INST_DIVI()		{ .type = INST_DIVI }
+#define MAKE_INST_MULI()	{ .type = INST_MULI }
+#define MAKE_INST_DIVI()	{ .type = INST_DIVI }
 #define MAKE_INST_PLUSI		{ .type = INST_PLUSI }
 #define MAKE_INST_MINUSI()	{ .type = INST_MINUSI }
 #define MAKE_INST_JMP(addr)	{ .type = INST_JMP, .operand = addr }
@@ -192,6 +195,9 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_DIVF:		return "INST_DIVF";
     case INST_MULF:		return "INST_MULF";
 
+    case INST_DROP:		return "INST_DROP";
+    case INST_RET:		return "INST_RET";
+    case INST_CALL:		return "INST_CALL";
     case INST_JMP:		return "INST_JMP";
     case INST_JMP_IF:		return "INST_JMP_IF";
     case INST_EQ:		return "INST_EQ";
@@ -220,6 +226,9 @@ const char *inst_name(Inst_Type type) {
     case INST_MINUSF:		return "minusf";
     case INST_MULF:		return "mulf";
     case INST_DIVF:		return "divf";	
+    case INST_DROP:		return "drop";
+    case INST_RET:		return "ret";
+    case INST_CALL:		return "call";
     case INST_JMP:		return "jmp";
     case INST_JMP_IF:		return "jmp_if";
     case INST_EQ:		return "eq";
@@ -248,6 +257,9 @@ int inst_has_operand(Inst_Type type) {
     case INST_MINUSF:		return 0;
     case INST_MULF:		return 0;
     case INST_DIVF:		return 0;	
+    case INST_DROP:		return 0;
+    case INST_RET:		return 0;
+    case INST_CALL:		return 1;
     case INST_JMP:		return 1;
     case INST_JMP_IF:		return 1;
     case INST_EQ:		return 0;
@@ -284,6 +296,7 @@ Err bm_execute_inst(Bm *bm) {
 
     // * Take the instruction to execute
     Inst inst = bm->program[bm->ip];
+    // printf("%s\n", inst_type_as_cstr(inst.type));
     
     switch(inst.type) {
     case INST_NOP:
@@ -295,6 +308,14 @@ Err bm_execute_inst(Bm *bm) {
 	    return ERR_STACK_OVERFLOW;
 	}
 	bm->stack[bm->stack_size++] = inst.operand;
+	bm->ip += 1;
+	break;
+
+    case INST_DROP:
+	if(bm->stack_size >= BM_STACK_CAPACITY) {
+	    return ERR_STACK_OVERFLOW;
+	}
+	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
 
@@ -314,8 +335,9 @@ Err bm_execute_inst(Bm *bm) {
        bm->ip += 1;
        break;
 
+
    case INST_SWAP:
-       if(inst.operand.as_u64 >= bm->stack_size) {
+       if(inst.operand.as_u64 >= bm->stack_size) { 
 	   return ERR_STACK_UNDERFLOW;
        }
 
@@ -369,14 +391,15 @@ Err bm_execute_inst(Bm *bm) {
       bm->ip += 1;
       break;
 	  
-    case INST_PLUSF:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_f64 += bm->stack[bm->stack_size - 1].as_f64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
+  case INST_PLUSF:
+      
+     if(bm->stack_size < 2) {
+	 return ERR_STACK_UNDERFLOW;
+     }
+     bm->stack[bm->stack_size - 2].as_f64 += bm->stack[bm->stack_size - 1].as_f64;
+     bm->stack_size -= 1;
+     bm->ip += 1;
+     break;
 	
     case INST_MINUSF:
 	if(bm->stack_size < 2) {
@@ -403,7 +426,26 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack[bm->stack_size - 2].as_f64 /= bm->stack[bm->stack_size - 1].as_f64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
-	break;	
+	break;
+
+    case INST_RET:
+	if(bm->stack_size < 1) {	    
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->ip = bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack_size -= 1;
+	break;
+
+    case INST_CALL:
+	if(bm->stack_size >= BM_STACK_CAPACITY) {
+	    return ERR_STACK_OVERFLOW;
+	}
+
+	// * Put the return address to the top of stack
+	bm->stack[bm->stack_size++].as_u64 = bm->ip + 1;
+	// * jump to the address of function
+	bm->ip = inst.operand.as_u64;
+	break;
 
     case INST_JMP:
 	bm->ip = inst.operand.as_u64;
@@ -727,25 +769,24 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
 	
 	if(line.count > 0 && *line.data != '#') {
-	   // printf("#%.*s#\n", (int) line.count, line.data);
+	  // printf("#%.*s#\n", (int) line.count, line.data);
 	    
 	   String_View token = sv_chop_by_delim(&line, ' ');
-	   
+	   // printf("#%.*s#\n", (int) token.count, token.data);
+		   
 	   // * check if there is any label
 	   if(token.count > 0 && token.data[token.count - 1] == ':') {
-				String_View label = {
-				.count = token.count - 1,
-				.data = token.data
-				};
-				basm_push_label(basm, label, bm->program_size);
-
-				// * Check any inst after ':'
-				token = sv_trim(sv_chop_by_delim(&line, ' '));
-			}
-
+	       String_View label = {
+		   .count = token.count - 1,		   
+		   .data = token.data
+	       };
+	       basm_push_label(basm, label, bm->program_size);
+	       // * Check any inst after ':'
+	       token = sv_trim(sv_chop_by_delim(&line, ' '));
+	   }
+	   
 	   if(token.count > 0) {
 	       String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
-	       
 	       if(sv_eq(token, cstr_as_sv(inst_name(INST_NOP)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_NOP,
@@ -755,6 +796,11 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PUSH,
 		       .operand = number_literal_as_word(operand)
+		   };
+	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_DROP)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_DROP,
 		   };
 	       }
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_DUP)))) {
@@ -828,6 +874,21 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		       };
 		   }
 	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_CALL)))) {
+		   if(operand.count > 0 && isdigit(*operand.data)) {
+		       // * operand as absolute address
+		       bm->program[bm->program_size++] = (Inst) {
+			   .type = INST_CALL,
+			   .operand = { .as_i64 = sv_to_int(operand) },
+		       };
+		   } else {
+		       // * operand as label
+		       basm_push_defered_operand(basm, bm->program_size, operand);
+		       bm->program[bm->program_size++] = (Inst) {
+			   .type = INST_CALL,
+		       };
+		   }
+	       }
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PLUSF)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_PLUSF,
@@ -864,6 +925,11 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		       .type = INST_PRINT_DEBUG
 		   };		   
 	       }
+	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
+		   bm->program[bm->program_size++] = (Inst) {
+		       .type = INST_RET
+		   };		   
+	       }
 	       else {
 		   fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
 		   (int) token.count, token.data);
@@ -875,7 +941,7 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
   }
 
  // print_labels(basm);
-//  print_unresolved_labels(basm);
+ // print_unresolved_labels(basm);
 
   // * Dereferencing the jump labels to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {

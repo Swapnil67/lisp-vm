@@ -1,3 +1,4 @@
+nop
 push 1.0   # n
 push 1.0   # n!
 push 1.0   # sum
