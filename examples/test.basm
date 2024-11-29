@@ -1,0 +1,9 @@
+# sum(1/n!)
+
+push 1
+loop:
+	dup 0
+	push 1
+	plusi
+	muli
+	jmp loop

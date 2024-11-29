@@ -1,0 +1,35 @@
+push 1.0   # n
+push 1.0   # n!
+push 1.0   # sum
+
+loop:
+
+  # sum + (1 / n!)
+  push 1.0
+  dup 2  
+  divf
+  plusf
+
+  # (n + 1)
+  swap 2
+  push 1.0
+  plusf
+  dup 0
+  swap 2
+  # n! * (n + 1)
+  mulf
+
+  # Get the initial positions
+  swap 1
+  swap 2
+
+  # Break condition
+  dup 2
+  push 10.0
+  gef
+
+jmp_if loop
+
+print_debug
+
+halt

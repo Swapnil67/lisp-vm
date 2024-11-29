@@ -2,6 +2,7 @@
 #include "./bm.h"
 
 Bm bm = {0};
+
 Basm basm = {0};
 
 // * Convert BASM Assembly To BASM vm executable
@@ -10,7 +11,7 @@ int main2(void);
 int main(int argc, char **argv);
 
 static char *shift(int *argc, char ***argv) {
-    assert(*argc > 0);
+		assert(*argc > 0);
     char *result = **argv;
     *argv += 1;
     *argc -= 1;
