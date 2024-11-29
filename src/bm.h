@@ -44,7 +44,8 @@ typedef enum {
     INST_MINUSF,
     INST_MULF,
     INST_DIVF,
-        
+
+    INST_RET,
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
@@ -92,8 +93,8 @@ typedef struct {
 
 #define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
 #define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
-#define MAKE_INST_MULI()		{ .type = INST_MULI }
-#define MAKE_INST_DIVI()		{ .type = INST_DIVI }
+#define MAKE_INST_MULI()	{ .type = INST_MULI }
+#define MAKE_INST_DIVI()	{ .type = INST_DIVI }
 #define MAKE_INST_PLUSI		{ .type = INST_PLUSI }
 #define MAKE_INST_MINUSI()	{ .type = INST_MINUSI }
 #define MAKE_INST_JMP(addr)	{ .type = INST_JMP, .operand = addr }
@@ -192,6 +193,7 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_DIVF:		return "INST_DIVF";
     case INST_MULF:		return "INST_MULF";
 
+    case INST_RET:		return "INST_RET";
     case INST_JMP:		return "INST_JMP";
     case INST_JMP_IF:		return "INST_JMP_IF";
     case INST_EQ:		return "INST_EQ";
@@ -220,6 +222,7 @@ const char *inst_name(Inst_Type type) {
     case INST_MINUSF:		return "minusf";
     case INST_MULF:		return "mulf";
     case INST_DIVF:		return "divf";	
+    case INST_RET:		return "ret";
     case INST_JMP:		return "jmp";
     case INST_JMP_IF:		return "jmp_if";
     case INST_EQ:		return "eq";
@@ -248,6 +251,7 @@ int inst_has_operand(Inst_Type type) {
     case INST_MINUSF:		return 0;
     case INST_MULF:		return 0;
     case INST_DIVF:		return 0;	
+    case INST_RET:		return 1;
     case INST_JMP:		return 1;
     case INST_JMP_IF:		return 1;
     case INST_EQ:		return 0;
@@ -403,7 +407,15 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack[bm->stack_size - 2].as_f64 /= bm->stack[bm->stack_size - 1].as_f64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
-	break;	
+	break;
+
+    case INST_RET:
+	if(bm->stack_size < 1) {	    
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->ip = bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack_size -= 1;
+	break;
 
     case INST_JMP:
 	bm->ip = inst.operand.as_u64;
