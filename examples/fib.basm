@@ -11,3 +11,4 @@ loop: dup 1	# Here
   dup 1
   plusi
   jmp loop
+
