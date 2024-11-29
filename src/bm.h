@@ -56,8 +56,7 @@ typedef enum {
     INST_NOT,
     INST_GEF,
     INST_HALT,
-    INST_PRINT_DEBUG,
-
+  
     NUMBER_OF_INSTS
 } Inst_Type;
 
@@ -215,7 +214,6 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_NOT:		return "INST_NOT";
     case INST_GEF:		return "INST_GEF";
     case INST_HALT:		return "INST_HALT";
-    case INST_PRINT_DEBUG:	return "INST_PRINT_DEBUT";
     case NUMBER_OF_INSTS:
     default:
 	assert(0 && "inst_type_as_cstr: Unreachable");
@@ -247,7 +245,6 @@ const char *inst_name(Inst_Type type) {
     case INST_NOT :		return "not";
     case INST_GEF :		return "gef";
     case INST_HALT:		return "halt";
-    case INST_PRINT_DEBUG:	return "print_debug";
     case NUMBER_OF_INSTS:
     default:
 	assert(0 && "inst_name: unreachable");
@@ -279,7 +276,6 @@ int inst_has_operand(Inst_Type type) {
     case INST_NOT:		return 0;
     case INST_GEF:		return 0;
     case INST_HALT:		return 0;
-    case INST_PRINT_DEBUG:	return 0;
     case NUMBER_OF_INSTS:
     default:
 	assert(0 && "inst_has_operand: unreachable");
@@ -522,21 +518,6 @@ Err bm_execute_inst(Bm *bm) {
 
     case INST_HALT:
 	bm->halt = 1;
-	break;
-
-    case INST_PRINT_DEBUG:	    
-	if(bm->stack_size < 1) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	fprintf(stdout, "u64:  %llu, i64: %lld, f64: %lf, ptr: %p\n",	
-	    bm->stack[bm->stack_size - 1].as_u64,	
-	    bm->stack[bm->stack_size - 1].as_i64,
-	    bm->stack[bm->stack_size - 1].as_f64,
-	    bm->stack[bm->stack_size - 1].as_ptr);
-
-		  
-	bm->stack_size -= 1;
-	bm->ip += 1;
 	break;
 
     case NUMBER_OF_INSTS:
@@ -945,11 +926,6 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_SWAP,
 		       .operand = { .as_i64 = sv_to_int(operand) }
-		   };		   
-	       }
-	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
-		   bm->program[bm->program_size++] = (Inst) {
-		       .type = INST_PRINT_DEBUG
 		   };		   
 	       }
 	       else if(sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
