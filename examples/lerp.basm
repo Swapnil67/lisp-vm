@@ -24,16 +24,18 @@ main:
 	push 20.0
 	push 0.0
 	call lerpf
+	native 2
 
 	push 10.0
 	push 20.0
 	push 1.0
 	call lerpf
+	native 2
 
 	push 10.0
 	push 20.0
 	push 0.5
 	call lerpf
-
+	native 2
 
 	halt
