@@ -18,6 +18,8 @@
 #define DEFERED_OPERANDS_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
 
+#define BASM_COMMENT_SYMBOL ':'
+
 typedef enum {
     ERR_OK = 0,
     ERR_STACK_OVERFLOW,
@@ -776,7 +778,7 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	assert(bm->program_size < BM_PROGRAM_CAPACITY);
 	String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
 	
-	if(line.count > 0 && *line.data != '#') {
+	if(line.count > 0 && *line.data != BASM_COMMENT_SYMBOL) {
 	  // printf("#%.*s#\n", (int) line.count, line.data);
 	    
 	   String_View token = sv_chop_by_delim(&line, ' ');
@@ -794,7 +796,7 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 	   }
 	   
 	   if(token.count > 0) {
-	       String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
+	       String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
 	       if(sv_eq(token, cstr_as_sv(inst_name(INST_NOP)))) {
 		   bm->program[bm->program_size++] = (Inst) {
 		       .type = INST_NOP,
