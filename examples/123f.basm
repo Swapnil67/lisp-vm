@@ -5,4 +5,5 @@ plusf
 plusf
 push 0
 divf
+native 2
 halt

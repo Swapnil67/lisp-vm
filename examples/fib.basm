@@ -5,10 +5,16 @@ nop
 nop
 # First two fibonacci numbers
 push 0
+dup 0
+native 3
 push 1
+dup 0
+native 3
 # The Loop
 loop: dup 1	# Here
   dup 1
   plusi
+  dup 0
+  native 3
   jmp loop
 
