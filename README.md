@@ -3,11 +3,11 @@
 ## Quick Start
 
  ```console
-$ make -B
+$ ./build.sh
 
-$ make examples
-
-$ ./bme -i ./examples/fib.bm -l 20
+$ ./bme -i ./examples/fib.bm
+$ ./bme -i ./examples/e.bm 
+$ ./bme -i ./examples/lerp.bm 
 ```
 
 ### basm

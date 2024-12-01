@@ -1,3 +1,5 @@
+:#include "./stdlib.hasm"
+
 : Initial Stack
 : 100
 : 1
@@ -18,7 +20,7 @@ main:
 
 	: Print the number
 	dup 0
-	native 3
+	native 3 :print_u64
 
 	plusf
 	swap 1
