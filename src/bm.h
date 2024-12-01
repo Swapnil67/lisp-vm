@@ -161,7 +161,7 @@ void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label);
 void print_unresolved_labels(const Basm *basm);
 void print_labels(const Basm *basm);
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm);
+void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path);
 int number_literal_as_word(String_View sv, Word *output);
 
 #endif // BM_H_
@@ -781,13 +781,14 @@ int number_literal_as_word(String_View sv, Word *output) {
     return 1;
 }
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
+void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path) {
     bm->program_size = 0;
+    int line_number = 0;
     
     while(source.count > 0) {
 	assert(bm->program_size < BM_PROGRAM_CAPACITY);
 	String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
-	
+	line_number += 1;
 	if(line.count > 0 && *line.data != BASM_COMMENT_SYMBOL) {
 	  // printf("#%.*s#\n", (int) line.count, line.data);
 	    
@@ -813,6 +814,13 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm) {
 		   bm->program[bm->program_size].type = inst_type;
 		   
 		   if(inst_has_operand(inst_type)) {
+
+		       if(operand.count == 0) {
+			   fprintf(stderr, "%s:%d: ERROR: instruction `%.*s` requires an operand\n",
+			   input_file_path, line_number, (int) token.count, token.data);
+			   exit(1);
+		       }
+		       
 		       // * parse operand as word  
 		       if(!number_literal_as_word(
 		           operand,
