@@ -18,7 +18,8 @@
 #define DEFERED_OPERANDS_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
 
-#define BASM_COMMENT_SYMBOL ':'
+#define BASM_COMMENT_SYMBOL ';'
+#define BASM_PP_SYMBOL '%'
 
 typedef enum {
     ERR_OK = 0,
@@ -794,50 +795,87 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
 	    
 	   String_View token = sv_chop_by_delim(&line, ' ');
 	   // printf("#%.*s#\n", (int) token.count, token.data);
-		   
-	   // * check if there is any label
-	   if(token.count > 0 && token.data[token.count - 1] == ':') {
-	       String_View label = {
-		   .count = token.count - 1,		   
-		   .data = token.data
-	       };
-	       basm_push_label(basm, label, bm->program_size);
-	       // * Check any inst after ':'
-	       token = sv_trim(sv_chop_by_delim(&line, ' '));
-	   }
-	   
-	   if(token.count > 0) {
-	       String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
 
-	       Inst_Type inst_type = INST_NOP;
-	       if(inst_by_name(token, &inst_type)) {
-		   bm->program[bm->program_size].type = inst_type;
+	   // * Pre-processor
+	   if(token.count > 0 && *token.data == BASM_PP_SYMBOL) {
+	       token.count -= 1;
+	       token.data += 1;
+	       
+	       if(sv_eq(token, cstr_as_sv("label"))) {
+		   line = sv_trim(line);
+		   // printf("#%.*s#\n", (int) line.count, line.data);
 		   
-		   if(inst_has_operand(inst_type)) {
-
-		       if(operand.count == 0) {
-			   fprintf(stderr, "%s:%d: ERROR: instruction `%.*s` requires an operand\n",
-			   input_file_path, line_number, (int) token.count, token.data);
+		   String_View label = sv_chop_by_delim(&line, ' ');
+		   if(label.count > 0) {
+		       line = sv_trim(line);
+		       String_View value = sv_chop_by_delim(&line, ' ');
+		       Word word = {0};
+		       if(!number_literal_as_word(value, &word)) {
+			   fprintf(stderr, "%s:%d: ERROR: `%.*s` is not a number\n",
+			   input_file_path, line_number, (int) value.count, value.data);
 			   exit(1);
 		       }
-		       
-		       // * parse operand as word  
-		       if(!number_literal_as_word(
-		           operand,
-			   &bm->program[bm->program_size].operand)) {
-			   // * or parse operand as label
-			   basm_push_defered_operand(basm, bm->program_size, operand);
-		       }
-
+		       // printf("word.as_u64: %lld\n", word.as_u64);
+		       basm_push_label(basm, label, word.as_u64);
 		   }
-		   bm->program_size += 1;
-	       } else {
-		   fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
-		   (int) token.count, token.data);
-		   exit(1);
+		   else {
+		       fprintf(stderr, "%s:%d: ERROR: label name is not provided\n",
+		       input_file_path, line_number);
+		       exit(1);
+		   }
+	       }
+	       else {
+		   fprintf(stderr, "%s:%d: ERROR: unknown pre-processor directive `%.*s`\n",
+		   input_file_path, line_number, (int) token.count, token.data);
+		   exit(1);		   
 	       }
 	       
-	  }
+	   } else {
+	       // * label
+	       if(token.count > 0 && token.data[token.count - 1] == ':') {
+		   String_View label = {
+		       .count = token.count - 1,		   
+		       .data = token.data
+		   };
+		   basm_push_label(basm, label, bm->program_size);
+		   // * Check any inst after ':'
+		   token = sv_trim(sv_chop_by_delim(&line, ' '));
+	       }
+
+	       // * Instruction
+	       if(token.count > 0) {
+		   String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
+
+		   Inst_Type inst_type = INST_NOP;
+		   if(inst_by_name(token, &inst_type)) {
+		       bm->program[bm->program_size].type = inst_type;
+
+		       if(inst_has_operand(inst_type)) {
+
+			   if(operand.count == 0) {
+			       fprintf(stderr, "%s:%d: ERROR: instruction `%.*s` requires an operand\n",
+			       input_file_path, line_number, (int) token.count, token.data);
+			       exit(1);
+			   }
+
+			   // * parse operand as word  
+			   if(!number_literal_as_word(
+			       operand,
+			       &bm->program[bm->program_size].operand)) {
+			       // * or parse operand as label
+			       basm_push_defered_operand(basm, bm->program_size, operand);
+			   }
+
+		       }
+		       bm->program_size += 1;
+		   } else {
+		       fprintf(stderr, "%s:%d: ERROR: unknown instruction `%.*s`\n",
+		       input_file_path, line_number, (int) token.count, token.data);
+		       exit(1);
+		   }
+
+	       }
+	   }
       }
   }
 
