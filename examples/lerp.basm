@@ -1,3 +1,7 @@
+#include "./natives.hasm"
+
+#define N 10.0
+
 jmp main
 
 : a + (b - a) * t
@@ -26,7 +30,7 @@ main:
 	push 20.0			: b
 	push 0.0			: t
 	push 1.0			: 1
-	push 10.0			: n
+	push N				: n
 	divf
 	
 loop:
@@ -34,7 +38,7 @@ loop:
 	dup 3
 	dup 3
 	call lerpf
-	native 2
+	native print_f64
 
 	: t + (1/n)
 	swap 1

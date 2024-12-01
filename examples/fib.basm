@@ -1,4 +1,6 @@
-:#include "./stdlib.hasm"
+#include "./natives.hasm"
+
+#define N 30
 
 : Initial Stack
 : 100
@@ -11,7 +13,7 @@ main:
   : First two fibonacci numbers & Counter  
   push 0      			  	: 1st fib number
   push 1				: 2nd fib number
-  push 20				: N - amount of iterations
+  push N				: N - amount of iterations
   : The Loop
   loop:
 	: Find Fib
@@ -20,7 +22,7 @@ main:
 
 	: Print the number
 	dup 0
-	native 3 :print_u64
+	native print_u64
 
 	plusf
 	swap 1

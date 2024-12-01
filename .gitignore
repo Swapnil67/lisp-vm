@@ -3,6 +3,7 @@
 bme
 basm
 debasm
+*.pp
 
 playground/
 
