@@ -773,7 +773,6 @@ int number_literal_as_word(String_View sv, Word *output) {
 	// * Try to parse it as double
 	result.as_f64 = strtod(cstr, &endptr);
 	if((size_t)(endptr - cstr) != sv.count) {
-	    // TODO: Invalid Literal basm error does not print it's location
 	    return 0;
 	}
     }
