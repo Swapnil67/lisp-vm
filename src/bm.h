@@ -63,12 +63,10 @@ typedef enum {
     NUMBER_OF_INSTS
 } Inst_Type;
 
-
 typedef struct {
     size_t count;
     const char *data;
 } String_View;
-
 
 String_View cstr_as_sv(const char *cstr);
 String_View sv_trim_left(String_View sv);
@@ -139,7 +137,7 @@ void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
 typedef struct {
     String_View name;
-    Inst_Addr addr;
+    Word word;
 } Label;
 
 // * Location of all the jumps that have unresolved labels
@@ -156,8 +154,8 @@ typedef struct {
     size_t defered_operands_size;
 } Basm;
 
-Inst_Addr basm_find_label_addr(Basm *basm, String_View name);
-void basm_push_label(Basm *basm, String_View name, Inst_Addr addr);
+int basm_resolve_label(Basm *basm, String_View name, Word *output);
+int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label);
 void print_unresolved_labels(const Basm *basm);
 void print_labels(const Basm *basm);
@@ -668,73 +666,43 @@ String_View sv_trim(String_View sv) {
 
 
 String_View sv_chop_by_delim(String_View *sv, char delim) {
-
     size_t i = 0;
-    while(i < sv->count && sv->data[i] != delim) {
-	i += 1;
+    while (i < sv->count && sv->data[i] != delim) {
+        i += 1;
     }
-
-//    printf("%ld - %ld\n", sv->count, i); 
+    //    printf("%ld - %ld\n", sv->count, i);
 
     String_View result = {
-	.count = i,
-	.data = sv->data,
+        .count = i,
+        .data = sv->data,
     };
-    
-    if(i < sv->count) {
-	sv->count -= i + 1;
-	sv->data += i + 1;
+
+    if (i < sv->count) {
+        sv->count -= i + 1;
+        sv->data += i + 1;
     }
     else {
-	sv->count -= i;
-	sv->data += i;
+        sv->count -= i;
+        sv->data += i;
     }
 
     return result;
 }
 
-
 int sv_to_int(String_View sv) {
     int result = 0;
-    for(size_t i = 0; (i < sv.count && isdigit(sv.data[i])); ++i) {
-	result = result * 10 + sv.data[i] - '0';
+    for (size_t i = 0; (i < sv.count && isdigit(sv.data[i])); ++i) {
+        result = result * 10 + sv.data[i] - '0';
     }
     return result;
 }
 
 int sv_eq(String_View a, String_View b) {
-    if(a.count != b.count) {
-	return 0;
+    if (a.count != b.count) {
+        return 0;
+    } else {
+        return memcmp(a.data, b.data, a.count) == 0;
     }
-    else {
-	return memcmp(a.data, b.data, a.count) == 0;
-    }
-}
-
-// * Find the address of a particular label in Basm 
-Inst_Addr basm_find_label_addr(Basm *basm, String_View name) {
-    for(size_t i = 0; i < basm->labels_size; ++i) {
-	if(sv_eq(basm->labels[i].name, name)) {
-	    return basm->labels[i].addr;
-	}
-    }
-    fprintf(stderr, "ERROR: label `%.*s` does not exists\n",
-    (int) name.count, name.data);
-    exit(1);
-
-}
-
-void basm_push_label(Basm *basm, String_View name, Inst_Addr addr) {
-    assert(basm->labels_size < LABEL_CAPACITY);
-    basm->labels[basm->labels_size++] = (Label){ .name = name, .addr = addr };
-}
-
-void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label) {
-    assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
-    basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand) {
-	.addr = addr,
-	.label = label
-    };
 }
 
 void print_labels(const Basm *basm) {
@@ -743,7 +711,7 @@ void print_labels(const Basm *basm) {
 	printf("%.*s ->  %llu\n",
 	(int) basm->labels[i].name.count,
 	basm->labels[i].name.data,
-	basm->labels[i].addr);
+	basm->labels[i].word.as_u64);
     }
 }
  
@@ -755,6 +723,40 @@ void print_unresolved_labels(const Basm *basm) {
 	(int) basm->defered_operands[i].label.count,
 	basm->defered_operands[i].label.data);
     }
+}
+
+// * Find the address of a particular label in Basm 
+int basm_resolve_label(Basm *basm, String_View name, Word *output) {
+    for (size_t i = 0; i < basm->labels_size; ++i) {
+        if (sv_eq(basm->labels[i].name, name)) {
+ 	    *output = basm->labels[i].word;
+	    return 1;
+        }
+    }
+    return 0;
+}
+
+int basm_bind_label(Basm *basm, String_View name, Word word) {
+    assert(basm->labels_size < LABEL_CAPACITY);
+
+    // * Check if label already bind
+    Word ignore = {0};
+    if(basm_resolve_label(basm, name, &ignore)) {
+	return 0;
+    }
+
+    // printf("Label: %s\n", name.data);
+    // printf("%lf\n", word.as_f64);
+    
+    basm->labels[basm->labels_size++] = (Label) {.name = name, .word = word};
+    return 1;
+}
+
+void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label) {
+    assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
+    basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand){
+        .addr = addr,
+        .label = label};
 }
 
 int number_literal_as_word(String_View sv, Word *output) {
@@ -816,7 +818,11 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
 			   exit(1);
 		       }
 		       // printf("word.as_u64: %lld\n", word.as_u64);
-		       basm_push_label(basm, label, word.as_u64);
+		       if(!basm_bind_label(basm, label, word)) {
+			   fprintf(stderr, "%s:%d: ERROR: label `%.*s` is already defined\n",
+			   input_file_path, line_number, (int) label.count, label.data);
+			   exit(1);
+		       }
 		   }
 		   else {
 		       fprintf(stderr, "%s:%d: ERROR: label name is not provided\n",
@@ -837,7 +843,13 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
 		       .count = token.count - 1,		   
 		       .data = token.data
 		   };
-		   basm_push_label(basm, label, bm->program_size);
+
+		   if(!basm_bind_label(basm, label, (Word){ .as_u64 =  bm->program_size })) {
+		       fprintf(stderr, "%s:%d: ERROR: label `%.*s` is already defined\n",
+		       input_file_path, line_number, (int) label.count, label.data);
+		       exit(1);		       
+		   }
+		   
 		   // * Check any inst after ':'
 		   token = sv_trim(sv_chop_by_delim(&line, ' '));
 	       }
@@ -884,14 +896,19 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
 
   // * Dereferencing the jump labels to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
-      Inst_Addr addr = basm_find_label_addr(basm, basm->defered_operands[i].label);
-      // printf("Addr : %lld\n", addr);
-      // printf("label : %s\n", basm->defered_operands[i].label.data);
-      // printf("label addr : %lld\n", basm->defered_operands[i].addr);
-      // printf("bm->program[6].tyep : %s\n", inst_type_as_cstr(bm->program[6].type));
-//      printf("label : %s\n", inst_type_as_cstr(bm->program[basm->defered_operands[i].addr].type));
-     bm->program[basm->defered_operands[i].addr].operand.as_u64 = addr;
- }
+      String_View label = basm->defered_operands[i].label;
+      
+      if(!basm_resolve_label(
+	  basm,
+	  label,
+	  &bm->program[basm->defered_operands[i].addr].operand
+      )) {
+	  fprintf(stderr, "%s ERROR: unknown label `%.*s`\n",
+	  input_file_path, (int) label.count, label.data);
+	  exit(1);	  
+      }
+  }
+
 }
 
 

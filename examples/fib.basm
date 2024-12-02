@@ -1,4 +1,4 @@
-%label N 30
+%label N 10
 %label print_u64 4
 
 ; Initial Stack
@@ -10,14 +10,14 @@ jmp main
 
 main: 
   ; First two fibonacci numbers & Counter  
-  push 0      			  	; 1st fib number
+  push 0      	; 1st fib number
   push 1				; 2nd fib number
   push N				; N - amount of iterations
   ; The Loop
   loop:
 	; Find Fib
 	swap 2
-  	dup 1
+	dup 1
 
 	; Print the number
 	dup 0
