@@ -1,5 +1,5 @@
+%include "./natives.hasm"
 %label N 10
-%label print_u64 4
 
 ; Initial Stack
 ; 100
