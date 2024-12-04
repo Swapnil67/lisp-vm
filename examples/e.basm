@@ -1,3 +1,5 @@
+%include "./examples/natives.hasm"
+
 nop
 push 1.0   ; n
 push 1.0   ; n!
@@ -31,6 +33,6 @@ loop:
 
 jmp_if loop
 
-native 2
+native print_f64
 
 halt

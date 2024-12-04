@@ -1,4 +1,4 @@
-%include "./natives.hasm"
+%include "./examples/natives.hasm"
 %label N 10
 
 ; Initial Stack
