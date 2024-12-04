@@ -21,6 +21,7 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
+#define BASM_MEMORY_CAPACITY (100 * 1000 * 1000)
 
 typedef enum {
     ERR_OK = 0,
@@ -78,7 +79,6 @@ String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
 int sv_eq(String_View a, String_View b);
 int sv_to_int(String_View sv);
-String_View sv_slurp_file(String_View file_path);
 
 int inst_by_name(String_View name, Inst_Type *output);
 const char *inst_name(Inst_Type type);
@@ -155,8 +155,14 @@ typedef struct {
     size_t labels_size;
     Defered_Operand defered_operands[DEFERED_OPERANDS_CAPACITY];
     size_t defered_operands_size;
+
+    char memory[BASM_MEMORY_CAPACITY];
+    size_t memory_size;
 } Basm;
 
+
+void *basm_alloc(Basm *basm, size_t size);
+String_View basm_slurp_file(Basm *basm, String_View file_path);
 int basm_resolve_label(Basm *basm, String_View name, Word *output);
 int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label);
@@ -667,13 +673,12 @@ String_View sv_trim(String_View sv) {
     return sv_trim_right(sv_trim_left(sv));
 }
 
-
 String_View sv_chop_by_delim(String_View *sv, char delim) {
     size_t i = 0;
     while (i < sv->count && sv->data[i] != delim) {
         i += 1;
     }
-    //    printf("%ld - %ld\n", sv->count, i);
+    // printf("%ld - %ld\n", sv->count, i);
 
     String_View result = {
         .count = i,
@@ -726,6 +731,14 @@ void print_unresolved_labels(const Basm *basm) {
 	(int) basm->defered_operands[i].label.count,
 	basm->defered_operands[i].label.data);
     }
+}
+
+void *basm_alloc(Basm *basm, size_t size) {
+    assert(basm->memory_size + size <= BASM_MEMORY_CAPACITY);
+
+    void *result = basm->memory + basm->memory_size;
+    basm->memory_size += size;
+    return result;
 }
 
 // * Find the address of a particular label in Basm 
@@ -792,7 +805,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
     bm->program_size = 0;
     int line_number = 0;
 
-    String_View original_source = sv_slurp_file(input_file_path);
+    String_View original_source = basm_slurp_file(basm, input_file_path);
     String_View source = original_source;
     // printf("Source: \n%s\n", source.data);
     
@@ -804,7 +817,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 	  // printf("#%.*s#\n", (int) line.count, line.data);
 	    
 	   String_View token = sv_chop_by_delim(&line, ' ');
-	   // printf("#%.*s#\n", (int) token.count, token.data);
+	   //  printf("#%.*s#\n", (int) token.count, token.data);
 
 	   // * Pre-processor
 	   if(token.count > 0 && *token.data == BASM_PP_SYMBOL) {
@@ -813,12 +826,16 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 	       
 	       if(sv_eq(token, cstr_as_sv("label"))) {
 		   line = sv_trim(line);
-		   // printf("#%.*s#\n", (int) line.count, line.data);
+		   // printf("Line: #%.*s#\n", (int) line.count, line.data);
 		   
 		   String_View label = sv_chop_by_delim(&line, ' ');
+		   // printf("Label: #%.*s#\n", (int) label.count, label.data);
+		   
 		   if(label.count > 0) {
 		       line = sv_trim(line);
 		       String_View value = sv_chop_by_delim(&line, ' ');
+		       // printf("Value: #%.*s#\n", (int) value.count, value.data);
+		       
 		       Word word = {0};
 		       if(!number_literal_as_word(value, &word)) {
 			   fprintf(stderr, "%.*s:%d: ERROR: `%.*s` is not a number\n",
@@ -845,6 +862,8 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 		       if(*line.data == '"' && line.data[line.count - 1] == '"') {
 			   line.data += 1;
 			   line.count -= 2;    // * For start and end (")
+
+			   // printf("File Name: #%.*s#\n", (int) line.count, line.data);
 
 			   if(level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
 			       fprintf(stderr,
@@ -893,20 +912,16 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 	       // * Instruction
 	       if(token.count > 0) {
 		   String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-
 		   Inst_Type inst_type = INST_NOP;
 		   if(inst_by_name(token, &inst_type)) {
 		       bm->program[bm->program_size].type = inst_type;
-
 		       if(inst_has_operand(inst_type)) {
-
 			   if(operand.count == 0) {
 			       fprintf(stderr, "%.*s:%d: ERROR: instruction `%.*s` requires an operand\n",
 			       SV_FORMAT(input_file_path), line_number,
 			       (int) token.count, token.data);
 			       exit(1);
 			   }
-
 			   // * parse operand as word  
 			   if(!number_literal_as_word(
 			       operand,
@@ -914,7 +929,6 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 			       // * or parse operand as label
 			       basm_push_defered_operand(basm, bm->program_size, operand);
 			   }
-
 		       }
 		       bm->program_size += 1;
 		   } else {
@@ -922,7 +936,6 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 		       SV_FORMAT(input_file_path), line_number, SV_FORMAT(token));
 		       exit(1);
 		   }
-
 	       }
 	   }
       }
@@ -933,8 +946,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 
   // * Dereferencing the jump labels to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
-      String_View label = basm->defered_operands[i].label;
-      
+      String_View label = basm->defered_operands[i].label;   
       if(!basm_resolve_label(
 	  basm,
 	  label,
@@ -945,16 +957,13 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 	  exit(1);	  
       }
   }
-
-  // * Clear the file read buffer
-  free((void *) original_source.data);
 }
 
 
-String_View sv_slurp_file(String_View file_path)
+String_View basm_slurp_file(Basm *basm, String_View file_path)
 {
 
-    char *file_path_cstr = malloc(file_path.count + 1);
+    char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
     if(file_path_cstr == NULL) {
 	fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
 	SV_FORMAT(file_path), strerror(errno));
@@ -983,7 +992,7 @@ String_View sv_slurp_file(String_View file_path)
         exit(1);
     }
 
-    char *buffer = malloc(m);
+    char *buffer = basm_alloc(basm, m);
     if(buffer == NULL) {
         fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
         exit(1);
@@ -1001,8 +1010,7 @@ String_View sv_slurp_file(String_View file_path)
     }
 
     fclose(f);
-    free(file_path_cstr);
-
+    
     return  (String_View) { .count = n, .data = buffer };
 }
 
