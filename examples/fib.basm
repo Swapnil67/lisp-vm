@@ -1,31 +1,32 @@
-:#include "./stdlib.hasm"
+%include "./examples/natives.hasm"
+%label N 10
 
-: Initial Stack
-: 100
-: 1
-: 0
+; Initial Stack
+; 100
+; 1
+; 0
 
 jmp main
 
 main: 
-  : First two fibonacci numbers & Counter  
-  push 0      			  	: 1st fib number
-  push 1				: 2nd fib number
-  push 20				: N - amount of iterations
-  : The Loop
+  ; First two fibonacci numbers & Counter  
+  push 0      	; 1st fib number
+  push 1				; 2nd fib number
+  push N				; N - amount of iterations
+  ; The Loop
   loop:
-	: Find Fib
+	; Find Fib
 	swap 2
-  	dup 1
+	dup 1
 
-	: Print the number
+	; Print the number
 	dup 0
-	native 3 :print_u64
+	native print_u64
 
 	plusf
 	swap 1
 
-	: Check counter condition
+	; Check counter condition
 	swap 2
 	push 1
 	minusi 1

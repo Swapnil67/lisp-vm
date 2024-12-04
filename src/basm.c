@@ -11,7 +11,7 @@ int main2(void);
 int main(int argc, char **argv);
 
 static char *shift(int *argc, char ***argv) {
-		assert(*argc > 0);
+    assert(*argc > 0);
     char *result = **argv;
     *argv += 1;
     *argc -= 1;
@@ -23,11 +23,14 @@ static void usage(FILE *stream, const char *program) {
 }
 
 
-int main2(void) {
-    String_View str = cstr_as_sv("  Swapnil Adsul\n  ");
+int main2() {
+    String_View str = cstr_as_sv("  Swapnil       Adsul\n  ");
+    str = sv_trim(str);
+    String_View sv = sv_chop_by_delim(&str, ' ');
+    printf("%.*s\n", (int) sv.count, sv.data);
     // int ans = sv_eq(str, cstr_as_sv("Swapnil Adsul\n"));
-    printf("%s\n", str.data);
-    printf("%s\n", sv_trim(str).data);    
+    // printf("%s\n", str.data);
+    // printf("%s\n", sv_trim(str).data);    
     return 0;
 }
 
@@ -51,14 +54,16 @@ int main(int argc, char **argv) {
    
 
     // * Read the basm file
-    String_View source = sv_slurp_file(input_file_path);
+    // String_View source = sv_slurp_file(input_file_path);
     // printf("Source: \n%s\n", source.data);
     
     // * Translate the source in to bm virtural machine [Interpret the program]
-    bm_translate_source(source, &bm, &basm);
+    bm_translate_source(&bm, &basm, cstr_as_sv(input_file_path), 0);
 
     // * Save the executable
     bm_save_program_to_file(&bm, output_file_path);
+
+    printf("%zd Bytes of memory used\n ", basm.memory_size);
 		         
     return 0;
 }

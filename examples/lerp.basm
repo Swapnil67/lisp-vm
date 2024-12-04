@@ -1,6 +1,9 @@
+%include "./examples/natives.hasm"
+%label N 10.0
+
 jmp main
 
-: a + (b - a) * t
+; a + (b - a) * t
 
 lerpf:
 	dup 3
@@ -11,7 +14,7 @@ lerpf:
 	mulf
 	plusf
 
-	: Clean the stack
+	; Clean the stack
 	swap 2
 	drop
 	swap 2
@@ -22,11 +25,11 @@ lerpf:
 
 
 main:
-	push 10.0			: a
-	push 20.0			: b
-	push 0.0			: t
-	push 1.0			: 1
-	push 10.0			: n
+	push 10.0			; a
+	push 20.0			; b
+	push 0.0			; t
+	push 1.0			; 1
+	push N				; n
 	divf
 	
 loop:
@@ -34,15 +37,15 @@ loop:
 	dup 3
 	dup 3
 	call lerpf
-	native 2
+	native print_f64
 
-	: t + (1/n)
+	; t + (1/n)
 	swap 1
 	dup 1
 	plusf
 	swap 1
 
-	: t > 1.0
+	; t > 1.0
 	dup 1
 	push 1.0
 	gef
@@ -52,17 +55,17 @@ loop:
 	halt
 
 
-: Initial 
-: top
-: 1/n
-: t
-: b
-: a
+; Initial 
+; top
+; 1/n
+; t
+; b
+; a
 
 
-: First Iteration
-: top
-: 1/n
-: t + 1/n
-: b
-: a
+; First Iteration
+; top
+; 1/n
+; t + 1/n
+; b
+; a

@@ -18,12 +18,13 @@ static void usage(FILE *stream, const char *program) {
 }
 
 static Err bm_alloc(Bm *bm) {
-    if(bm->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    // * Allocate the memory and save the ptr to top of stack
-    bm->stack[bm->stack_size - 1].as_ptr = malloc(bm->stack[bm->stack_size - 1].as_u64);
-    return ERR_OK;
+	if (bm->stack_size < 1) {
+		return ERR_STACK_UNDERFLOW;
+	}
+	
+	// * Allocate the memory and save the ptr to top of stack
+	bm->stack[bm->stack_size - 1].as_ptr = malloc(bm->stack[bm->stack_size - 1].as_u64);
+	return ERR_OK;
 }
 
 static Err bm_free(Bm *bm) {

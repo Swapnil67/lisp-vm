@@ -1,8 +1,7 @@
+%include "./examples/natives.hasm"
 jmp main
 
-test:
-	ret
-
 main:
-	call test
+	push 67
+	native alloc
 	halt
