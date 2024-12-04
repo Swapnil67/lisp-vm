@@ -592,7 +592,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 1) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 1].as_u64 = !bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack[bm->stack_size - 1].as_u64 = ~bm->stack[bm->stack_size - 1].as_u64;
 	bm->ip += 1;
 	break;
 	
