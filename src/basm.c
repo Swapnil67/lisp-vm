@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     // * Save the executable
     bm_save_program_to_file(&bm, output_file_path);
 
-    printf("Consumed %ld bytes of memory\n ", basm.memory_size);
+    printf("%zd Bytes of memory used\n ", basm.memory_size);
 		         
     return 0;
 }
