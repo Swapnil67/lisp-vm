@@ -1,0 +1,26 @@
+%include "./examples/natives.hasm"
+
+jmp main
+
+main:
+	push 5
+	push 9
+	andb
+	native print_u64
+
+	push 5
+	push 9
+	orb
+	native print_u64
+
+	push 5
+	push 9
+	xor
+	native print_u64
+
+	push 5
+	notb
+	native print_u64
+
+halt
+	
