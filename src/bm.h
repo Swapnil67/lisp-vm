@@ -61,6 +61,13 @@ typedef enum {
     INST_NOT,
     INST_GEF,
     INST_HALT,
+
+    INST_ANDB,
+    INST_ORB,
+    INST_XOR,
+    INST_SHR,
+    INST_SHL,
+    INST_NOTB,
   
     NUMBER_OF_INSTS
 } Inst_Type;
@@ -225,6 +232,14 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_NOT:		return "INST_NOT";
     case INST_GEF:		return "INST_GEF";
     case INST_HALT:		return "INST_HALT";
+    
+    case INST_ANDB:		return "INST_ANDB";
+    case INST_ORB:		return "INST_ORB";
+    case INST_XOR:		return "INST_XOR";
+    case INST_SHR:		return "INST_SHR";
+    case INST_SHL:		return "INST_SHL";
+    case INST_NOTB:		return "INST_NOTB";
+    
     case NUMBER_OF_INSTS:
     default:
 	assert(0 && "inst_type_as_cstr: Unreachable");
@@ -265,6 +280,12 @@ const char *inst_name(Inst_Type type) {
     case INST_NOT :		return "not";
     case INST_GEF :		return "gef";
     case INST_HALT:		return "halt";
+    case INST_ANDB:		return "andb";
+    case INST_ORB:		return "orb";
+    case INST_XOR:		return "xor";
+    case INST_SHR:		return "shr";
+    case INST_SHL:		return "shl";
+    case INST_NOTB:		return "notb";
     case NUMBER_OF_INSTS:
     default:
 	assert(0 && "inst_name: unreachable");
@@ -295,6 +316,13 @@ int inst_has_operand(Inst_Type type) {
     case INST_NOT:		return 0;
     case INST_GEF:		return 0;
     case INST_HALT:		return 0;
+
+    case INST_ANDB:		return 0;
+    case INST_ORB:		return 0;
+    case INST_XOR:		return 0;
+    case INST_SHR:		return 0;
+    case INST_SHL:		return 0;
+    case INST_NOTB:		return 0;
     case NUMBER_OF_INSTS:
     default:
 	assert(0 && "inst_has_operand: unreachable");
@@ -517,9 +545,7 @@ Err bm_execute_inst(Bm *bm) {
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	uint64_t a2 = bm->stack_size - 1;
-	uint64_t b2 = bm->stack_size - 2;
-	bm->stack[b2].as_u64 = bm->stack[a2].as_u64 >= bm->stack[b2].as_u64;
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 >= bm->stack[bm->stack_size - 2].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -533,6 +559,52 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack[st_top].as_u64 = !bm->stack[st_top].as_u64;
 	bm->ip += 1;
 	break;
+
+
+    case INST_ANDB:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 & bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+
+    case INST_ORB:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 | bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+
+    case INST_XOR:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 ^ bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+
+    case INST_NOTB:
+	if(bm->stack_size < 1) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 1].as_u64 = !bm->stack[bm->stack_size - 1].as_u64;
+	bm->ip += 1;
+	break;
+	
+    case INST_SHR:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 >> bm->stack[bm->stack_size - 1].as_u64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+
 
 
     case INST_HALT:
