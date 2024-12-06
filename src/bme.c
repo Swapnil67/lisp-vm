@@ -76,6 +76,15 @@ static Err bm_print_ptr(Bm *bm) {
     return ERR_OK;
 }
 
+// TODO: Implement gdb style (but better of course) debugger for bm
+static void bm_dump_memory(FILE *stream, Bm *bm) {
+    fprintf(stream, "Memory: ");
+    for(size_t i = 0; i < BM_MEMORY_CAPACITY; ++i) {
+	fprintf(stream, "%02X ", bm->memory[i]);
+    }
+    fprintf(stream, "\n");
+}
+
 int main(int argc, char **argv)
 {
     const char *program = shift(&argc, &argv);
@@ -141,6 +150,7 @@ int main(int argc, char **argv)
     else {
 	while (limit != 0 && !bm.halt) {
 	    bm_dump_stack(stdout, &bm);
+	    bm_dump_memory(stdout, &bm);
 	    printf("Instruction: %s %lld\n",
 	    inst_name(bm.program[bm.ip].type),
 	    bm.program[bm.ip].operand.as_u64);
