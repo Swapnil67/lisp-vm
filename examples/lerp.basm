@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-%label N 10.0
+%bind N 10.0
 
 jmp main
 

@@ -3,8 +3,8 @@
 
 jmp main
 
-%label N 65000
-%label BITS 8
+%bind N 65000
+%bind BITS 8
 
 
 main:

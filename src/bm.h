@@ -14,7 +14,7 @@
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_EXECUTION_LIMIT 69
-#define LABEL_CAPACITY 1024
+#define BASM_BINDINGS_CAPACITY 1024
 #define DEFERED_OPERANDS_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
 #define BM_MEMORY_CAPACITY (640 * 1000) // * 640KB
@@ -164,19 +164,19 @@ void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
 typedef struct {
     String_View name;
-    Word word;
-} Label;
+    Word value;
+} Binding;
 
-// * Location of all the jumps that have unresolved labels
+// * Location of all the jumps that have unresolved names
 typedef struct {
-    // * address of an inst the operand of which refers to a label
+    // * address of an inst the operand of which refers to a name
     Inst_Addr addr;
-    String_View label;
+    String_View name;
 } Defered_Operand;
 
 typedef struct {
-    Label labels[LABEL_CAPACITY];
-    size_t labels_size;
+    Binding bindings[BASM_BINDINGS_CAPACITY];
+    size_t bindings_size;
     Defered_Operand defered_operands[DEFERED_OPERANDS_CAPACITY];
     size_t defered_operands_size;
 
@@ -187,11 +187,11 @@ typedef struct {
 
 void *basm_alloc(Basm *basm, size_t size);
 String_View basm_slurp_file(Basm *basm, String_View file_path);
-int basm_resolve_label(Basm *basm, String_View name, Word *output);
-int basm_bind_label(Basm *basm, String_View name, Word word);
-void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label);
-void print_unresolved_labels(const Basm *basm);
-void print_labels(const Basm *basm);
+int basm_resolve_binding(Basm *basm, String_View name, Word *output);
+int basm_bind_value(Basm *basm, String_View name, Word word);
+void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name);
+void print_unresolved_names(const Basm *basm);
+void print_names(const Basm *basm);
 
 void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
 int number_literal_as_word(String_View sv, Word *output);
@@ -954,23 +954,23 @@ int sv_eq(String_View a, String_View b) {
     }
 }
 
-void print_labels(const Basm *basm) {
-    printf("-------- LABELS: -------\n");
-    for(size_t i = 0; i < basm->labels_size; ++i) {
+void print_names(const Basm *basm) {
+    printf("-------- NAMES: -------\n");
+    for(size_t i = 0; i < basm->bindings_size; ++i) {
 	printf("%.*s ->  %llu\n",
-	(int) basm->labels[i].name.count,
-	basm->labels[i].name.data,
-	basm->labels[i].word.as_u64);
+	(int) basm->bindings[i].name.count,
+	basm->bindings[i].name.data,
+	basm->bindings[i].value.as_u64);
     }
 }
  
-void print_unresolved_labels(const Basm *basm) {
+void print_unresolved_names(const Basm *basm) {
     printf("-------- UNRESOLVED_JMPS: -------\n");
     for(size_t i = 0; i < basm->defered_operands_size; ++i) {
 	printf("%lld -> %.*s\n",
 	basm->defered_operands[i].addr,
-	(int) basm->defered_operands[i].label.count,
-	basm->defered_operands[i].label.data);
+	(int) basm->defered_operands[i].name.count,
+	basm->defered_operands[i].name.data);
     }
 }
 
@@ -982,38 +982,38 @@ void *basm_alloc(Basm *basm, size_t size) {
     return result;
 }
 
-// * Find the address of a particular label in Basm 
-int basm_resolve_label(Basm *basm, String_View name, Word *output) {
-    for (size_t i = 0; i < basm->labels_size; ++i) {
-        if (sv_eq(basm->labels[i].name, name)) {
- 	    *output = basm->labels[i].word;
+// * Find the address of a particular name in Basm 
+int basm_resolve_binding(Basm *basm, String_View name, Word *output) {
+    for (size_t i = 0; i < basm->bindings_size; ++i) {
+        if (sv_eq(basm->bindings[i].name, name)) {
+ 	    *output = basm->bindings[i].value;
 	    return 1;
         }
     }
     return 0;
 }
 
-int basm_bind_label(Basm *basm, String_View name, Word word) {
-    assert(basm->labels_size < LABEL_CAPACITY);
+int basm_bind_value(Basm *basm, String_View name, Word value) {
+    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    // * Check if label already bind
+    // * Check if name already bind
     Word ignore = {0};
-    if(basm_resolve_label(basm, name, &ignore)) {
+    if(basm_resolve_binding(basm, name, &ignore)) {
 	return 0;
     }
 
-    // printf("Label: %s\n", name.data);
+    // printf("Name: %s\n", name.data);
     // printf("%lf\n", word.as_f64);
     
-    basm->labels[basm->labels_size++] = (Label) {.name = name, .word = word};
+    basm->bindings[basm->bindings_size++] = (Binding) {.name = name, .value = value};
     return 1;
 }
 
-void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View label) {
+void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name) {
     assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
     basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand){
         .addr = addr,
-        .label = label};
+        .name = name};
 }
 
 int number_literal_as_word(String_View sv, Word *output) {
@@ -1065,14 +1065,14 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 	       token.count -= 1;
 	       token.data += 1;
 	       
-	       if(sv_eq(token, cstr_as_sv("label"))) {
+	       if(sv_eq(token, cstr_as_sv("bind"))) {
 		   line = sv_trim(line);
 		   // printf("Line: #%.*s#\n", (int) line.count, line.data);
 		   
-		   String_View label = sv_chop_by_delim(&line, ' ');
-		   // printf("Label: #%.*s#\n", (int) label.count, label.data);
+		   String_View name = sv_chop_by_delim(&line, ' ');
+		   // printf("Name: #%.*s#\n", (int) name.count, name.data);
 		   
-		   if(label.count > 0) {
+		   if(name.count > 0) {
 		       line = sv_trim(line);
 		       String_View value = sv_chop_by_delim(&line, ' ');
 		       // printf("Value: #%.*s#\n", (int) value.count, value.data);
@@ -1084,15 +1084,15 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 			   exit(1);
 		       }
 		       
-		       // * Check if label already bind to some other instructions
-		       if(!basm_bind_label(basm, label, word)) {
-			   fprintf(stderr, "%.*s:%d: ERROR: label `%.*s` is already defined\n",
-			   SV_FORMAT(input_file_path), line_number, SV_FORMAT(label));
+		       // * Check if name already bind to some other instructions
+		       if(!basm_bind_value(basm, name, word)) {
+			   fprintf(stderr, "%.*s:%d: ERROR: name `%.*s` is already bound\n",
+			   SV_FORMAT(input_file_path), line_number, SV_FORMAT(name));
 			   exit(1);
 		       }
 		   }
 		   else {
-		       fprintf(stderr, "%.*s:%d: ERROR: label name is not provided\n",
+		       fprintf(stderr, "%.*s:%d: ERROR: binding name is not provided\n",
 		       SV_FORMAT(input_file_path), line_number);
 		       exit(1);
 		   }
@@ -1133,16 +1133,16 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 	       }
 	       
 	   } else {
-	       // * label
+	       // * Label Bindings
 	       if(token.count > 0 && token.data[token.count - 1] == ':') {
-		   String_View label = {
+		   String_View name = {
 		       .count = token.count - 1,		   
 		       .data = token.data
 		   };
 
-		   if(!basm_bind_label(basm, label, (Word){ .as_u64 =  bm->program_size })) {
-		       fprintf(stderr, "%.*s:%d: ERROR: label `%.*s` is already defined\n",
-		       SV_FORMAT(input_file_path), line_number, SV_FORMAT(label));
+		   if(!basm_bind_value(basm, name, (Word){ .as_u64 =  bm->program_size })) {
+		       fprintf(stderr, "%.*s:%d: ERROR: binding `%.*s` is already defined\n",
+		       SV_FORMAT(input_file_path), line_number, SV_FORMAT(name));
 		       exit(1);		       
 		   }
 		   
@@ -1167,7 +1167,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
 			   if(!number_literal_as_word(
 			       operand,
 			       &bm->program[bm->program_size].operand)) {
-			       // * or parse operand as label
+			       // * or parse operand as name
 			       basm_push_defered_operand(basm, bm->program_size, operand);
 			   }
 		       }
@@ -1182,19 +1182,19 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
       }
   }
 
- // print_labels(basm);
- // print_unresolved_labels(basm);
+ // print_names(basm);
+ // print_unresolved_names(basm);
 
-  // * Dereferencing the jump labels to address
+  // * Dereferencing the jump names to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
-      String_View label = basm->defered_operands[i].label;   
-      if(!basm_resolve_label(
+      String_View binding = basm->defered_operands[i].name;   
+      if(!basm_resolve_binding(
 	  basm,
-	  label,
+	  binding,
 	  &bm->program[basm->defered_operands[i].addr].operand
       )) {
-	  fprintf(stderr, "%.*s ERROR: unknown label `%.*s`\n",
-	  SV_FORMAT(input_file_path), SV_FORMAT(label));
+	  fprintf(stderr, "%.*s ERROR: unknown binding `%.*s`\n",
+	  SV_FORMAT(input_file_path), SV_FORMAT(binding));
 	  exit(1);	  
       }
   }

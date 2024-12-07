@@ -2,7 +2,7 @@
 
 %include "./examples/natives.hasm"
 
-%label N 256
+%bind N 256
 
        push 0		; i
 loop:

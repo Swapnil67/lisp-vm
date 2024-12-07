@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-%label N 10
+%bind N 10
 
 ; Initial Stack
 ; 100
