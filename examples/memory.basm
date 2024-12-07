@@ -2,7 +2,7 @@
 
 %include "./examples/natives.hasm"
 
-%label N 10
+%label N 256
 
        push 0		; i
 loop:
@@ -18,7 +18,10 @@ loop:
 	eq
 	not
 
-
 	jmp_if loop
+
+	push 0
+	push N
+	native dump_memory
 
 	halt
