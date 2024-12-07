@@ -23,7 +23,7 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
-#define BASM_MEMORY_CAPACITY (100 * 1000 * 1000) // * 100MB
+#define BASM_ARENA_CAPACITY (100 * 1000 * 1000) // * 100MB
 
 typedef enum {
     ERR_OK = 0,
@@ -180,8 +180,8 @@ typedef struct {
     Defered_Operand defered_operands[DEFERED_OPERANDS_CAPACITY];
     size_t defered_operands_size;
 
-    char memory[BASM_MEMORY_CAPACITY];
-    size_t memory_size;
+    char arena[BASM_ARENA_CAPACITY];
+    size_t arena_size;
 } Basm;
 
 
@@ -975,10 +975,10 @@ void print_unresolved_labels(const Basm *basm) {
 }
 
 void *basm_alloc(Basm *basm, size_t size) {
-    assert(basm->memory_size + size <= BASM_MEMORY_CAPACITY);
+    assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
 
-    void *result = basm->memory + basm->memory_size;
-    basm->memory_size += size;
+    void *result = basm->arena + basm->arena_size;
+    basm->arena_size += size;
     return result;
 }
 
