@@ -23,7 +23,7 @@ static void usage(FILE *stream, const char *program) {
 }
 
 
-int main2() {
+int main2(void) {
     String_View str = cstr_as_sv("  Swapnil       Adsul\n  ");
     str = sv_trim(str);
     String_View sv = sv_chop_by_delim(&str, ' ');
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     // * Save the executable
     bm_save_program_to_file(&bm, output_file_path);
 
-    printf("%zd Bytes of memory used\n ", basm.memory_size);
+    printf("%zd Bytes of memory used\n ", basm.arena_size);
 		         
     return 0;
 }

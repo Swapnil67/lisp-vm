@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -std=c11 -pedantic
+CFLAGS=-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -Wconversion -std=c11 -pedantic
 LIBS=
 
 EXAMPLES=$(patsubst %.basm,%.bm,$(wildcard ./examples/*.basm))

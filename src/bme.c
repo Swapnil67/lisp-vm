@@ -76,6 +76,30 @@ static Err bm_print_ptr(Bm *bm) {
     return ERR_OK;
 }
 
+static Err bm_dump_memory(Bm *bm) {
+    if(bm->stack_size < 2) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
+    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
+    
+    if(addr >= BM_MEMORY_CAPACITY) {
+	return ERR_ILLEGAL_MEMORY_ACCESS;
+    }
+
+    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
+	return ERR_ILLEGAL_MEMORY_ACCESS;	
+    }
+    
+    for(uint64_t i = 0; i < count; ++i) {
+	fprintf(stdout, "%02X ", bm->memory[addr + i]);	
+    }
+    
+    fprintf(stdout, "\n");
+    bm->stack_size -= 2;
+    return ERR_OK;
+}
+
 int main(int argc, char **argv)
 {
     const char *program = shift(&argc, &argv);
@@ -129,6 +153,7 @@ int main(int argc, char **argv)
     bm_push_native(&bm, bm_print_i64);    // 3 
     bm_push_native(&bm, bm_print_u64);    // 4
     bm_push_native(&bm, bm_print_ptr);    // 5
+    bm_push_native(&bm, bm_dump_memory);  // 6
 
     if (!debug) {
 	Err err = bm_execute_program(&bm, limit);
@@ -142,6 +167,7 @@ int main(int argc, char **argv)
 	while (limit != 0 && !bm.halt) {
 	    bm_dump_stack(stdout, &bm);
 	    printf("Instruction: %s %lld\n",
+	    
 	    inst_name(bm.program[bm.ip].type),
 	    bm.program[bm.ip].operand.as_u64);
 	    getchar();
