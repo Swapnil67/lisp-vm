@@ -1,8 +1,6 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
 
-Bm bm = {0};
-
 Basm basm = {0};
 
 // * Convert BASM Assembly To BASM vm executable
@@ -58,10 +56,10 @@ int main(int argc, char **argv) {
     // printf("Source: \n%s\n", source.data);
     
     // * Translate the source in to bm virtural machine [Interpret the program]
-    bm_translate_source(&bm, &basm, cstr_as_sv(input_file_path), 0);
+    basm_translate_source(&basm, cstr_as_sv(input_file_path), 0);
 
     // * Save the executable
-    bm_save_program_to_file(&bm, output_file_path);
+    basm_save_to_file(&basm, output_file_path);
 
     printf("%zd Bytes of memory used\n ", basm.arena_size);
 		         
