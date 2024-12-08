@@ -10,6 +10,14 @@
 #include <ctype.h>
 #include <errno.h>
 
+#if defined(__GNUC__) || defined(__clang__)
+#  define PACKED __attribute__((packed))
+#else
+#  warning "Packed attributes for struct is not implemented for this compiler. This may result in a program working incorrectly. Feel free to fix that and submit a Pull Request to https://github.com/tsoding/bng"
+#  define PACKED
+#endif
+
+
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof(xs[0]))
 #define BM_STACK_CAPACITY 1024
@@ -164,9 +172,19 @@ Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
 void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
-void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 void bm_save_program_to_file(const Bm *bm, const char *file_path);
+
+#define BM_FILE_MAGIC 0x4D42
+#define BM_FILE_VERSION 1
+
+typedef struct {
+    uint16_t magic;
+    uint16_t version;
+    uint64_t program_size;
+    uint64_t memory_size;
+    uint64_t memory_capacity;
+} PACKED Bm_File_Meta;
 
 typedef struct {
     String_View name;
@@ -839,13 +857,6 @@ void bm_dump_stack(FILE *stream, const Bm *bm) {
     
 }
 
-void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size) {
-    assert(bm->program_size < BM_PROGRAM_CAPACITY);
-    memcpy(bm->program, program, sizeof(program[0]) * program_size);
-    bm->program_size = program_size;
-}
-
-
 // * Read from file -> bm->program buffer
 void bm_load_program_from_file(Bm *bm, const char *file_path) {
     // * Open file in read binary mode
@@ -868,7 +879,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
     }
 
     assert(((size_t) m % sizeof(bm->program[0])) == 0);
-    assert((size_t)m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
+    assert((size_t) m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
 
     if (fseek(f, 0, SEEK_SET) < 0) {
         fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
@@ -1080,9 +1091,28 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
         exit(1);
     }
 
-    // * size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
-    fwrite(basm->program, sizeof(basm->program[0]), basm->program_size, f);
+    Bm_File_Meta meta = {
+	.magic = BM_FILE_MAGIC,
+	.version = BM_FILE_VERSION,
+	.program_size = basm->program_size,
+	.memory_size = basm->memory_size,
+	.memory_capacity = basm->memory_capacity,
+    };
 
+    // * size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
+    fwrite(&meta, sizeof(meta), 1, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
+    }
+    
+    fwrite(basm->program, sizeof(basm->program[0]), basm->program_size, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
+    }
+ 
+    fwrite(basm->memory, sizeof(basm->memory[0]), basm->memory_size, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
         exit(1);
