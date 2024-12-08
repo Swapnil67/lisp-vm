@@ -226,7 +226,8 @@ void print_names(const Basm *basm);
 
 void basm_save_to_file(Basm *basm, const char *file_path);
 void basm_translate_source(Basm *basm, String_View input_file_path, size_t level);
-int number_literal_as_word(String_View sv, Word *output);
+Word basm_push_string_to_memory(Basm *basm, String_View sv);
+int basm_translate_literal(Basm *basm, String_View sv, Word *output);
 
 #endif // BM_H_
 
@@ -910,7 +911,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 
     // * Read program instructions
     bm->program_size = fread(bm->program, sizeof(bm->program[0]), meta.program_size, f);
-    printf("bm->program_size after: %lld\n", bm->program_size);
+    printf("bm->program_size: %lld\n", bm->program_size);
     if(bm->program_size != meta.program_size) {
         fprintf(stderr,
 	"ERROR: %s: read %lld program instructions, but expected %lld.\n", file_path, bm->program_size, meta.program_size);
@@ -919,7 +920,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 
     // * Read static memory
     n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
-    printf("meta->memory_size before: %ld\n", n);
+    printf("meta->memory_size: %ld\n", n);
     if(n != meta.memory_size) {
         fprintf(stderr,
 	"ERROR: %s: read %zd bytes, but expected %lld.\n", file_path, n, meta.memory_size);
@@ -1067,29 +1068,54 @@ void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name) {
         .name = name};
 }
 
-int number_literal_as_word(String_View sv, Word *output) {
-    assert(sv.count < 1024);
-    char cstr[sv.count + 1];
-    char *endptr = 0;
-    
-    memcpy(cstr, sv.data, sv.count);
-    cstr[sv.count] = '\0';
+Word basm_push_string_to_memory(Basm *basm, String_View sv) {
+    assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
+    Word result = word_u64(basm->memory_size);
 
-    Word result = {0};
+    // * copy sv.count amount of bytes to basm->memory buffer
+    memcpy(basm->memory + basm->memory_size, sv.data, sv.count);
 
-    // * Try to parse it as uint64_t first
-    result.as_u64 = strtoull(cstr, &endptr, 10);
+    basm->memory_size += sv.count;
 
-    if((size_t)(endptr - cstr) != sv.count) {
-	// * Try to parse it as double
-	result.as_f64 = strtod(cstr, &endptr);
-	if((size_t)(endptr - cstr) != sv.count) {
-	    return 0;
-	}
+    if(basm->memory_size > basm->memory_capacity) {
+	basm->memory_capacity = basm->memory_size;
     }
 
-    *output = result;
-    return 1;
+    return result;
+}    
+
+int basm_translate_literal(Basm *basm, String_View sv, Word *output) {
+    
+    // * Encounter String
+    if(sv.count > 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
+	sv.data += 1;
+	sv.count -= 2;
+	*output = basm_push_string_to_memory(basm, sv);
+    }
+    else {
+    	assert(sv.count < 1024);
+	char cstr[sv.count + 1];
+	char *endptr = 0;
+
+	memcpy(cstr, sv.data, sv.count);
+	cstr[sv.count] = '\0';
+
+	Word result = {0};
+
+	// * Try to parse it as uint64_t first
+	result.as_u64 = strtoull(cstr, &endptr, 10);
+
+	if((size_t)(endptr - cstr) != sv.count) {
+	    // * Try to parse it as double
+	    result.as_f64 = strtod(cstr, &endptr);
+	    if((size_t)(endptr - cstr) != sv.count) {
+		return false;
+	    }
+	}
+
+	*output = result;
+    }
+    return true;
 }
 
 void basm_save_to_file(Basm *basm, const char *file_path) {
@@ -1160,11 +1186,11 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 		   
 		   if(name.count > 0) {
 		       line = sv_trim(line);
-		       String_View value = sv_chop_by_delim(&line, ' ');
+		       String_View value = line;
 		       // printf("Value: #%.*s#\n", (int) value.count, value.data);
 		       
 		       Word word = {0};
-		       if(!number_literal_as_word(value, &word)) {
+		       if(!basm_translate_literal(basm, value, &word)) {
 			   fprintf(stderr, "%.*s:%d: ERROR: `%.*s` is not a number\n",
 			   SV_FORMAT(input_file_path), line_number, SV_FORMAT(value));
 			   exit(1);
@@ -1211,7 +1237,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 		       fprintf(stderr, "%.*s:%d: ERROR: file path is not provided\n",
 		       SV_FORMAT(input_file_path), line_number);
 		       exit(1);
-		   }		   
+		   }
 	       } else {
 		   fprintf(stderr, "%.*s:%d: ERROR: unknown pre-processor directive `%.*s`\n",
 		   SV_FORMAT(input_file_path), line_number, SV_FORMAT(token));
@@ -1253,7 +1279,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 			       exit(1);
 			   }
 			   // * parse operand as word  
-			   if(!number_literal_as_word(
+			   if(!basm_translate_literal(
+			       basm,
 			       operand,
 			       &basm->program[basm->program_size].operand)) {
 			       // * or parse operand as name
