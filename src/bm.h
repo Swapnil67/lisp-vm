@@ -858,6 +858,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm) {
 
 // * Read from file -> bm->program buffer
 void bm_load_program_from_file(Bm *bm, const char *file_path) {
+    
     // * Open file in read binary mode
     FILE *f = fopen(file_path, "rb");
     if (f == NULL) {
@@ -865,35 +866,65 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
         exit(1);
     }
 
-    // fseek(FILE *stream, long offset, int whence);
-    if (fseek(f, 0, SEEK_END) < 0) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+    // * Read the meta information of file
+    Bm_File_Meta meta = {0};
+    size_t n = fread(&meta, sizeof(meta), 1, f);
+    if (n < 1) {
+        fprintf(stderr, "ERROR: could not read meta data from file `%s`: %s\n", file_path, strerror(errno));
+        exit(1);
+    }
+    // * Verify the magic number
+    if(meta.magic != BM_FILE_MAGIC){
+        fprintf(stderr,
+	"ERROR: %s does not appear to be a valid BM file. "
+	"Unexpected magic %04X. Expected %04X.\n", file_path, meta.magic, BM_FILE_MAGIC);
         exit(1);
     }
 
-    long m = ftell(f);
-    if (m < 0) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
+    // * Verifiy the bm file version
+    if(meta.version != BM_FILE_VERSION) {
+        fprintf(stderr,
+	"ERROR: %s: unsupported version of BM file %d."
+	"Expected version %d.\n", file_path, meta.version, BM_FILE_VERSION);
         exit(1);
     }
 
-    assert(((size_t) m % sizeof(bm->program[0])) == 0);
-    assert((size_t) m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
-
-    if (fseek(f, 0, SEEK_SET) < 0) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-        exit(1);
+    if(meta.program_size > BM_PROGRAM_CAPACITY) {
+        fprintf(stderr,
+	"ERROR: %s: program section is too big. The file contains %lld program instruction. But the capacity is %d.\n", file_path, meta.program_size, BM_PROGRAM_CAPACITY);
+        exit(1);	
     }
 
-    // * Read the file into buffer
-    // size_t fread(void * array_buffer, size_t size, size_t count, FILE * file_stream)
-    bm->program_size = fread(bm->program, sizeof(bm->program[0]), (size_t) m / sizeof(bm->program[0]), f);
-
-    // * Check if any errors
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-        exit(1);
+    if(meta.memory_capacity > BM_MEMORY_CAPACITY) {
+        fprintf(stderr,
+	"ERROR: %s: memory section is too big. The file wants %lld bytes. But the capacity is %d.\n", file_path, meta.memory_capacity, BM_MEMORY_CAPACITY);
+        exit(1);	
     }
+
+
+    if(meta.memory_size > meta.memory_capacity) {
+        fprintf(stderr,
+	"ERROR: %s: memory size %lld is greater than declared memory capacity %lld.\n", file_path, meta.memory_size, meta.memory_capacity);
+        exit(1);	
+    }
+
+    // * Read program instructions
+    bm->program_size = fread(bm->program, sizeof(bm->program[0]), meta.program_size, f);
+    printf("bm->program_size after: %lld\n", bm->program_size);
+    if(bm->program_size != meta.program_size) {
+        fprintf(stderr,
+	"ERROR: %s: read %lld program instructions, but expected %lld.\n", file_path, bm->program_size, meta.program_size);
+        exit(1);	
+    }
+
+    // * Read static memory
+    n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
+    printf("meta->memory_size before: %ld\n", n);
+    if(n != meta.memory_size) {
+        fprintf(stderr,
+	"ERROR: %s: read %zd bytes, but expected %lld.\n", file_path, n, meta.memory_size);
+        exit(1);	
+    }    
 
     fclose(f);
 }
@@ -1229,6 +1260,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 			       basm_push_defered_operand(basm, basm->program_size, operand);
 			   }
 		       }
+		       // Increase the program_size
 		       basm->program_size += 1;
 		   } else {
 		       fprintf(stderr, "%.*s:%d: ERROR: unknown instruction `%.*s`\n",
