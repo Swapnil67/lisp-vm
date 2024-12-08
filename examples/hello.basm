@@ -1,0 +1,19 @@
+%include "./examples/natives.hasm"
+
+%bind hello "Hello, World"
+
+; Pointer Arithmetics
+push hello
+push 12
+plusi
+
+; New line ASCII 10
+push 10
+write8
+
+; Print Hello World
+push hello
+push 13
+native write
+
+halt
