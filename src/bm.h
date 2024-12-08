@@ -173,7 +173,6 @@ Err bm_execute_program(Bm *bm, int limit);
 void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
-void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
 #define BM_FILE_MAGIC 0x4D42
 #define BM_FILE_VERSION 1
@@ -893,27 +892,6 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
     // * Check if any errors
     if (ferror(f)) {
         fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path, strerror(errno));
-        exit(1);
-    }
-
-    fclose(f);
-}
-
-// * Save the program to file
-void bm_save_program_to_file(const Bm *bm, const char *file_path)
-{
-    FILE *f  = fopen(file_path, "wb");
-    // printf("%ld", sizeof(program[1]));
-    if (f == NULL) {
-        fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path, strerror(errno));
-        exit(1);
-    }
-
-    // * size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
-    fwrite(bm->program, sizeof(bm->program[0]), bm->program_size, f);
-
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: could not write to file `%s`: %s\n", file_path, strerror(errno));
         exit(1);
     }
 
