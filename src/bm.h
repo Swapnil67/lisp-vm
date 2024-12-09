@@ -69,7 +69,9 @@ typedef enum {
     INST_JMP,
     INST_JMP_IF,
     INST_EQI,
+    INST_GEI,
     INST_NOT,
+    INST_EQF,
     INST_GEF,
     INST_HALT,
 
@@ -298,7 +300,9 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_JMP:		return "INST_JMP";
     case INST_JMP_IF:		return "INST_JMP_IF";
     case INST_EQI:		return "INST_EQI";
+    case INST_GEI:		return "INST_GEI";
     case INST_NOT:		return "INST_NOT";
+    case INST_EQF:		return "INST_EQF";    
     case INST_GEF:		return "INST_GEF";
     case INST_HALT:		return "INST_HALT";
     
@@ -356,8 +360,10 @@ const char *inst_name(Inst_Type type) {
     case INST_JMP:	return "jmp";
     case INST_JMP_IF:	return "jmp_if";
     case INST_EQI:	return "eqi";
-    case INST_NOT :	return "not";
-    case INST_GEF :	return "gef";
+    case INST_GEI:	return "gei";
+    case INST_NOT:	return "not";
+    case INST_EQF:	return "eqf";
+    case INST_GEF:	return "gef";
     case INST_HALT:	return "halt";
     case INST_ANDB:	return "andb";
     case INST_ORB:	return "orb";
@@ -403,7 +409,9 @@ int inst_has_operand(Inst_Type type) {
     case INST_JMP:	return 1;
     case INST_JMP_IF:	return 1;
     case INST_EQI:	return 0;
+    case INST_GEI:	return 0;
     case INST_NOT:	return 0;
+    case INST_EQF:	return 0;
     case INST_GEF:	return 0;
     case INST_HALT:	return 0;
 
@@ -640,11 +648,29 @@ Err bm_execute_inst(Bm *bm) {
 	bm->ip += 1;
 	break;
 
+    case INST_GEI:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_i64 = bm->stack[bm->stack_size - 1].as_i64 >= bm->stack[bm->stack_size - 2].as_i64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+	
+    case INST_EQF:
+	if(bm->stack_size < 2) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_f64 == bm->stack[bm->stack_size - 2].as_f64;
+	bm->stack_size -= 1;
+	bm->ip += 1;
+	break;
+	
     case INST_GEF:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 >= bm->stack[bm->stack_size - 2].as_u64;
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_f64 >= bm->stack[bm->stack_size - 2].as_f64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
