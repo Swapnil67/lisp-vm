@@ -33,7 +33,7 @@ main:
 
 	dup 0
 	push 0
-	eq
+	eqi
 	not
 
 	jmp_if loop

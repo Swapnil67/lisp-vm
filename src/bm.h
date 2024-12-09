@@ -68,7 +68,7 @@ typedef enum {
     INST_NATIVE,
     INST_JMP,
     INST_JMP_IF,
-    INST_EQ,
+    INST_EQI,
     INST_NOT,
     INST_GEF,
     INST_HALT,
@@ -297,7 +297,7 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_NATIVE:		return "INST_NATIVE";
     case INST_JMP:		return "INST_JMP";
     case INST_JMP_IF:		return "INST_JMP_IF";
-    case INST_EQ:		return "INST_EQ";
+    case INST_EQI:		return "INST_EQI";
     case INST_NOT:		return "INST_NOT";
     case INST_GEF:		return "INST_GEF";
     case INST_HALT:		return "INST_HALT";
@@ -355,7 +355,7 @@ const char *inst_name(Inst_Type type) {
     case INST_NATIVE:	return "native";
     case INST_JMP:	return "jmp";
     case INST_JMP_IF:	return "jmp_if";
-    case INST_EQ:	return "eq";
+    case INST_EQI:	return "eqi";
     case INST_NOT :	return "not";
     case INST_GEF :	return "gef";
     case INST_HALT:	return "halt";
@@ -402,7 +402,7 @@ int inst_has_operand(Inst_Type type) {
     case INST_NATIVE:	return 1;
     case INST_JMP:	return 1;
     case INST_JMP_IF:	return 1;
-    case INST_EQ:	return 0;
+    case INST_EQI:	return 0;
     case INST_NOT:	return 0;
     case INST_GEF:	return 0;
     case INST_HALT:	return 0;
@@ -631,13 +631,11 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 1;
 	break;
 
-    case INST_EQ:
+    case INST_EQI:
 	if(bm->stack_size < 2) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	uint64_t a1 = bm->stack_size - 1;
-	uint64_t b1 = bm->stack_size - 2;
-	bm->stack[b1].as_u64 = bm->stack[a1].as_u64 == bm->stack[b1].as_u64;
+	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 == bm->stack[bm->stack_size - 2].as_u64;
 	bm->stack_size -= 1;
 	bm->ip += 1;
 	break;
@@ -1128,11 +1126,11 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     }
 
     Bm_File_Meta meta = {
-	.magic = BM_FILE_MAGIC,
-	.version = BM_FILE_VERSION,
-	.program_size = basm->program_size,
-	.memory_size = basm->memory_size,
-	.memory_capacity = basm->memory_capacity,
+        .magic = BM_FILE_MAGIC,
+        .version = BM_FILE_VERSION,
+        .program_size = basm->program_size,
+        .memory_size = basm->memory_size,
+        .memory_capacity = basm->memory_capacity,
     };
 
     // * size_t fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
@@ -1321,17 +1319,16 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 
 String_View basm_slurp_file(Basm *basm, String_View file_path)
 {
-
     char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
     if(file_path_cstr == NULL) {
-	fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
-	SV_FORMAT(file_path), strerror(errno));
+        fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
+                SV_FORMAT(file_path),
+                strerror(errno));
         exit(1);
     }
 
     memcpy(file_path_cstr, file_path.data, file_path.count);
     file_path_cstr[file_path.count] = '\0';
-    
     
     FILE *f = fopen(file_path_cstr, "r");
     if (f == NULL) {
