@@ -29,6 +29,7 @@ loop:
   ; Break condition
   dup 2
   push 10.0
+  swap 1
   gef
 
 jmp_if loop

@@ -56,6 +56,7 @@ typedef enum {
     INST_MINUSI,
     INST_MULI,
     INST_DIVI,
+    INST_MODI,
 
     INST_PLUSF,
     INST_MINUSF,
@@ -68,9 +69,22 @@ typedef enum {
     INST_NATIVE,
     INST_JMP,
     INST_JMP_IF,
-    INST_EQI,
     INST_NOT,
+    
+    INST_EQI,
+    INST_GEI,
+    INST_GTI,
+    INST_LEI,
+    INST_LTI,
+    INST_NEI,
+    
+    INST_EQF,
     INST_GEF,
+    INST_GTF,
+    INST_LEF,
+    INST_LTF,
+    INST_NEF,
+    
     INST_HALT,
 
     INST_ANDB,
@@ -276,48 +290,62 @@ const char *err_as_cstr(Err err) {
 
 const char *inst_type_as_cstr(Inst_Type type) {
     switch(type) {
-    case INST_NOP:		return "INST_NOP";
-    case INST_PUSH:		return "INST_PUSH";
-    case INST_DUP:		return "INST_DUP";
-    case INST_SWAP:		return "INST_SWAP";
+    case INST_NOP:	return "INST_NOP";
+    case INST_PUSH:	return "INST_PUSH";
+    case INST_DUP:	return "INST_DUP";
+    case INST_SWAP:	return "INST_SWAP";
 
-    case INST_PLUSI:		return "INST_PLUSI";
-    case INST_MINUSI:		return "INST_MINUSI";
-    case INST_DIVI:		return "INST_DIVI";
-    case INST_MULI:		return "INST_MULI";
+    case INST_PLUSI:	return "INST_PLUSI";
+    case INST_MINUSI:	return "INST_MINUSI";
+    case INST_DIVI:	return "INST_DIVI";
+    case INST_MULI:	return "INST_MULI";
+    case INST_MODI:	return "INST_MODI";    
 
-    case INST_PLUSF:		return "INST_PLUSF";
-    case INST_MINUSF:		return "INST_MINUSF";
-    case INST_DIVF:		return "INST_DIVF";
-    case INST_MULF:		return "INST_MULF";
+    case INST_PLUSF:	return "INST_PLUSF";
+    case INST_MINUSF:	return "INST_MINUSF";
+    case INST_DIVF:	return "INST_DIVF";
+    case INST_MULF:	return "INST_MULF";
 
-    case INST_DROP:		return "INST_DROP";
-    case INST_RET:		return "INST_RET";
-    case INST_CALL:		return "INST_CALL";
-    case INST_NATIVE:		return "INST_NATIVE";
-    case INST_JMP:		return "INST_JMP";
-    case INST_JMP_IF:		return "INST_JMP_IF";
-    case INST_EQI:		return "INST_EQI";
-    case INST_NOT:		return "INST_NOT";
-    case INST_GEF:		return "INST_GEF";
-    case INST_HALT:		return "INST_HALT";
+    case INST_DROP:	return "INST_DROP";
+    case INST_RET:	return "INST_RET";
+    case INST_CALL:	return "INST_CALL";
+    case INST_NATIVE:	return "INST_NATIVE";
+    case INST_JMP:	return "INST_JMP";
+    case INST_JMP_IF:	return "INST_JMP_IF";
+
+    case INST_NOT:	return "INST_NOT";
+    case INST_HALT:	return "INST_HALT";
+
+    case INST_EQI:	return "INST_EQI";
+    case INST_GEI:	return "INST_GEI";
+    case INST_GTI:	return "INST_GTI";
+    case INST_LEI:	return "INST_LEI";
+    case INST_LTI:	return "INST_LTI";
+    case INST_NEI:	return "INST_NEI";
     
-    case INST_ANDB:		return "INST_ANDB";
-    case INST_ORB:		return "INST_ORB";
-    case INST_XOR:		return "INST_XOR";
-    case INST_SHR:		return "INST_SHR";
-    case INST_SHL:		return "INST_SHL";
-    case INST_NOTB:		return "INST_NOTB";
+    case INST_EQF:	return "INST_EQF";
+    case INST_GEF:	return "INST_GEF";
+    case INST_GTF:	return "INST_GTF";
+    case INST_LEF:	return "INST_LEF";
+    case INST_LTF:	return "INST_LTF";
+    case INST_NEF:	return "INST_NEF";
+        
+    case INST_ANDB:	return "INST_ANDB";
+    case INST_ORB:	return "INST_ORB";
+    case INST_XOR:	return "INST_XOR";
+    case INST_SHR:	return "INST_SHR";
+    case INST_SHL:	return "INST_SHL";
+    case INST_NOTB:	return "INST_NOTB";
 
-    case INST_READ8:		return "INST_READ8";
-    case INST_READ16:		return "INST_READ16";
-    case INST_READ32:		return "INST_READ32";
-    case INST_READ64:		return "INST_READ64";
+    case INST_READ8:	return "INST_READ8";
+    case INST_READ16:	return "INST_READ16";
+    case INST_READ32:	return "INST_READ32";
+    case INST_READ64:	return "INST_READ64";
 
-    case INST_WRITE8:		return "INST_WRITE8";
-    case INST_WRITE16:		return "INST_WRITE16";
-    case INST_WRITE32:		return "INST_WRITE32";
-    case INST_WRITE64:		return "INST_WRITE64";
+    case INST_WRITE8:	return "INST_WRITE8";
+    case INST_WRITE16:	return "INST_WRITE16";
+    case INST_WRITE32:	return "INST_WRITE32";
+    case INST_WRITE64:	return "INST_WRITE64";
        
     case NUMBER_OF_INSTS:
     default:
@@ -341,23 +369,40 @@ const char *inst_name(Inst_Type type) {
     case INST_PUSH:	return "push";
     case INST_DUP:	return "dup";
     case INST_SWAP:	return "swap";
+    
     case INST_PLUSI:	return "plusi";
     case INST_MINUSI:	return "minusi";
     case INST_MULI:	return "muli";
     case INST_DIVI:	return "divi";
+    case INST_MODI:	return "modi";
+    
     case INST_PLUSF:	return "plusf";
     case INST_MINUSF:	return "minusf";
     case INST_MULF:	return "mulf";
-    case INST_DIVF:	return "divf";	
+    case INST_DIVF:	return "divf";
+    
     case INST_DROP:	return "drop";
     case INST_RET:	return "ret";
     case INST_CALL:	return "call";
     case INST_NATIVE:	return "native";
     case INST_JMP:	return "jmp";
     case INST_JMP_IF:	return "jmp_if";
+
     case INST_EQI:	return "eqi";
-    case INST_NOT :	return "not";
-    case INST_GEF :	return "gef";
+    case INST_GEI:	return "gei";
+    case INST_GTI:	return "gti";
+    case INST_LEI:	return "lei";
+    case INST_LTI:	return "lti";
+    case INST_NEI:	return "nei";
+
+    case INST_EQF:	return "eqf";
+    case INST_GEF:	return "gef";
+    case INST_GTF:	return "gtf";
+    case INST_LEF:	return "lef";
+    case INST_LTF:	return "ltf";
+    case INST_NEF:	return "nef";
+
+    case INST_NOT:	return "not";
     case INST_HALT:	return "halt";
     case INST_ANDB:	return "andb";
     case INST_ORB:	return "orb";
@@ -384,45 +429,61 @@ const char *inst_name(Inst_Type type) {
 
 int inst_has_operand(Inst_Type type) {
     switch(type) {
-    case INST_NOP:	return 0;
-    case INST_PUSH:	return 1;
-    case INST_DUP:	return 1;
-    case INST_SWAP:	return 1;
-    case INST_PLUSI:	return 0;
-    case INST_MINUSI:	return 0;
-    case INST_MULI:	return 0;
-    case INST_DIVI:	return 0;
-    case INST_PLUSF:	return 0;
-    case INST_MINUSF:	return 0;
-    case INST_MULF:	return 0;
-    case INST_DIVF:	return 0;	
-    case INST_DROP:	return 0;
-    case INST_RET:	return 0;
-    case INST_CALL:	return 1;
-    case INST_NATIVE:	return 1;
-    case INST_JMP:	return 1;
-    case INST_JMP_IF:	return 1;
-    case INST_EQI:	return 0;
-    case INST_NOT:	return 0;
-    case INST_GEF:	return 0;
-    case INST_HALT:	return 0;
+    case INST_NOP:	return false;
+    case INST_PUSH:	return true;
+    case INST_DUP:	return true;
+    case INST_SWAP:	return true;
+    
+    case INST_PLUSI:	return false;
+    case INST_MINUSI:	return false;
+    case INST_MULI:	return false;
+    case INST_DIVI:	return false;
+    case INST_MODI:	return false;
+    
+    case INST_PLUSF:	return false;
+    case INST_MINUSF:	return false;
+    case INST_MULF:	return false;
+    case INST_DIVF:	return false;	
+    case INST_DROP:	return false;
+    case INST_RET:	return false;
+    case INST_CALL:	return true;
+    case INST_NATIVE:	return true;
+    case INST_JMP:	return true;
+    case INST_JMP_IF:	return true;
+    case INST_NOT:	return false;
+    case INST_HALT:	return false;
 
-    case INST_ANDB:	return 0;
-    case INST_ORB:	return 0;
-    case INST_XOR:	return 0;
-    case INST_SHR:	return 0;
-    case INST_SHL:	return 0;
-    case INST_NOTB:	return 0;
 
-    case INST_READ8:    return 0;
-    case INST_READ16:   return 0;
-    case INST_READ32:   return 0;
-    case INST_READ64:   return 0;
+    case INST_EQI:	return false;
+    case INST_GEI:	return false;
+    case INST_GTI:	return false;
+    case INST_LEI:	return false;
+    case INST_LTI:	return false;
+    case INST_NEI:	return false;
 
-    case INST_WRITE8:   return 0;
-    case INST_WRITE16:  return 0;
-    case INST_WRITE32:  return 0;
-    case INST_WRITE64:  return 0;
+    case INST_EQF:	return false;
+    case INST_GEF:	return false;
+    case INST_GTF:	return false;
+    case INST_LEF:	return false;
+    case INST_LTF:	return false;
+    case INST_NEF:	return false;
+
+    case INST_ANDB:	return false;
+    case INST_ORB:	return false;
+    case INST_XOR:	return false;
+    case INST_SHR:	return false;
+    case INST_SHL:	return false;
+    case INST_NOTB:	return false;
+
+    case INST_READ8:    return false;
+    case INST_READ16:   return false;
+    case INST_READ32:   return false;
+    case INST_READ64:   return false;
+
+    case INST_WRITE8:   return false;
+    case INST_WRITE16:  return false;
+    case INST_WRITE32:  return false;
+    case INST_WRITE64:  return false;
     
     case NUMBER_OF_INSTS:
     default:
@@ -444,6 +505,17 @@ Err bm_execute_program(Bm *bm, int limit) {
     }
     return ERR_OK;
 }
+
+
+#define BINARY_OP(bm, in, out, op)														\
+do {																		\
+    if((bm)->stack_size < 2) {															\
+	return ERR_STACK_UNDERFLOW;														\
+    }																		\
+    (bm)->stack[(bm)->stack_size - 2].as_##out = (bm)->stack[(bm)->stack_size - 2].as_##in op (bm)->stack[(bm)->stack_size - 1].as_##in;	\
+    (bm)->stack_size -= 1;															\
+    (bm)->ip += 1;																\
+} while(false)																	\
 
 // * Execute Single Instruction
 Err bm_execute_inst(Bm *bm) {
@@ -477,111 +549,76 @@ Err bm_execute_inst(Bm *bm) {
 	break;
 
     case INST_DUP:
-       if(bm->stack_size >= BM_STACK_CAPACITY) {
-	   return ERR_STACK_OVERFLOW;
-       }
-
-       if(bm->stack_size - inst.operand.as_u64 <= 0) {
-	   return ERR_STACK_UNDERFLOW;    
-       }
-
-       // * Push the operand to the top of stack  [Operand relative to current stack position]
-       const uint64_t idx = bm->stack_size - 1 - inst.operand.as_u64;
-       bm->stack[bm->stack_size].as_u64 = bm->stack[idx].as_u64;
-       bm->stack_size += 1;
-       bm->ip += 1;
-       break;
-
-
-   case INST_SWAP:
-       if(inst.operand.as_u64 >= bm->stack_size) { 
-	   return ERR_STACK_UNDERFLOW;
-       }
-
-       const uint64_t a = bm->stack_size - 1;
-       const uint64_t b = bm->stack_size - 1 - inst.operand.as_u64;
-
-       Word t = bm->stack[a];
-       bm->stack[a] = bm->stack[b];
-       bm->stack[b] = t;
-
-       bm->ip += 1;
-       break;
-
-
-   case INST_PLUSI:
-       if(bm->stack_size < 2) {
-	   return ERR_STACK_UNDERFLOW;
-       }
-       bm->stack[bm->stack_size - 2].as_u64 += bm->stack[bm->stack_size - 1].as_u64;
-       bm->stack_size -= 1;
-       bm->ip += 1;
-       break;
-
-   case INST_MINUSI:
-      if(bm->stack_size < 2) {
-	  return ERR_STACK_UNDERFLOW;
-      }
-      bm->stack[bm->stack_size - 2].as_u64 -= bm->stack[bm->stack_size - 1].as_u64;
-      bm->stack_size -= 1;
-      bm->ip += 1;
-      break;
-
-  case INST_MULI:
-      if(bm->stack_size < 2) {
-	  return ERR_STACK_UNDERFLOW;
-      }
-      bm->stack[bm->stack_size - 2].as_u64 *= bm->stack[bm->stack_size - 1].as_u64;
-      bm->stack_size -= 1;
-      bm->ip += 1;
-      break;
-
-  case INST_DIVI:
-      if(bm->stack_size < 2) {
-	  return ERR_STACK_UNDERFLOW;
-      }
-      if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
-	  return ERR_DIV_BY_ZERO;
-      }
-      bm->stack[bm->stack_size - 2].as_u64 /= bm->stack[bm->stack_size - 1].as_u64;
-      bm->stack_size -= 1;
-      bm->ip += 1;
-      break;
-	  
-  case INST_PLUSF:
-     if(bm->stack_size < 2) {
-	 return ERR_STACK_UNDERFLOW;
-     }
-     bm->stack[bm->stack_size - 2].as_f64 += bm->stack[bm->stack_size - 1].as_f64;
-     bm->stack_size -= 1;
-     bm->ip += 1;
-     break;
-	
-    case INST_MINUSF:
-	if(bm->stack_size < 2) {
+	if(bm->stack_size >= BM_STACK_CAPACITY) {
+	    return ERR_STACK_OVERFLOW;
+	}
+	if(bm->stack_size - inst.operand.as_u64 <= 0) {
 	    return ERR_STACK_UNDERFLOW;
 	}
-	bm->stack[bm->stack_size - 2].as_f64 -= bm->stack[bm->stack_size - 1].as_f64;
-	bm->stack_size -= 1;
+
+	// * Push the operand to the top of stack  [Operand relative to current stack position]
+	const uint64_t idx = bm->stack_size - 1 - inst.operand.as_u64;
+	bm->stack[bm->stack_size].as_u64 = bm->stack[idx].as_u64;
+	bm->stack_size += 1;
 	bm->ip += 1;
+	break;
+
+
+    case INST_SWAP:
+	if(inst.operand.as_u64 >= bm->stack_size) {
+	    return ERR_STACK_UNDERFLOW;
+	}
+
+	const uint64_t a = bm->stack_size - 1;
+	const uint64_t b = bm->stack_size - 1 - inst.operand.as_u64;
+
+	Word t = bm->stack[a];
+	bm->stack[a] = bm->stack[b];
+	bm->stack[b] = t;
+
+	bm->ip += 1;
+	break;
+
+    case INST_PLUSI:
+	BINARY_OP(bm, u64, u64, +);
+	break;	
+
+    case INST_MINUSI:
+	BINARY_OP(bm, u64, u64, -);
+	break;
+
+    case INST_MULI:
+	BINARY_OP(bm, u64, u64, *);
+	break;
+
+    case INST_DIVI: {
+	if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
+	    return ERR_DIV_BY_ZERO;
+	}
+	BINARY_OP(bm, u64, u64, /);
+    } break;
+
+    case INST_MODI: {
+	if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
+	    return ERR_DIV_BY_ZERO;
+	}
+	BINARY_OP(bm, u64, u64, %);
+    } break;
+
+    case INST_PLUSF:
+	BINARY_OP(bm, f64, f64, +);
+	break;
+	
+    case INST_MINUSF:
+	BINARY_OP(bm, f64, f64, -);
 	break;
 
     case INST_MULF:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
- 	bm->stack[bm->stack_size - 2].as_f64 *= bm->stack[bm->stack_size - 1].as_f64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, f64, f64, *);
 	break;
 
     case INST_DIVF:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_f64 /= bm->stack[bm->stack_size - 1].as_f64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, f64, f64, /);
 	break;
 
     case INST_RET:
@@ -632,23 +669,53 @@ Err bm_execute_inst(Bm *bm) {
 	break;
 
     case INST_EQI:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 == bm->stack[bm->stack_size - 2].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, u64, u64, ==);
 	break;
 
+    case INST_GEI:
+	BINARY_OP(bm, u64, u64, >=);
+	break;
+
+    case INST_GTI:
+	BINARY_OP(bm, u64, u64, >);
+	break;
+
+    case INST_LEI:
+	BINARY_OP(bm, u64, u64, <=);
+	break;
+	
+    case INST_LTI:
+	BINARY_OP(bm, u64, u64, <);
+	break;
+
+    case INST_NEI:
+	BINARY_OP(bm, u64, u64, !=);
+	break;
+
+    case INST_EQF:
+	BINARY_OP(bm, f64, u64, ==);
+	break;
+	
     case INST_GEF:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 >= bm->stack[bm->stack_size - 2].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, f64, u64, >=);
 	break;
 
+    case INST_GTF:
+	BINARY_OP(bm, f64, u64, >);
+	break;
+
+    case INST_LEF:
+	BINARY_OP(bm, f64, u64, <=);
+	break;
+	
+    case INST_LTF:
+	BINARY_OP(bm, f64, u64, <);
+	break;
+	
+    case INST_NEF:
+	BINARY_OP(bm, f64, u64, !=);
+	break;
+		
 
     case INST_NOT:
 	if(bm->stack_size < 1) {
@@ -661,30 +728,23 @@ Err bm_execute_inst(Bm *bm) {
 
 
     case INST_ANDB:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 & bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, u64, u64, &);
 	break;
 
     case INST_ORB:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 | bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, u64, u64, |);
 	break;
 
     case INST_XOR:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 ^ bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
+	BINARY_OP(bm, u64, u64, ^);
+	break;
+
+    case INST_SHR:
+	BINARY_OP(bm, u64, u64, >>);
+	break;
+	
+    case INST_SHL:
+	BINARY_OP(bm, u64, u64, <<);	
 	break;
 
     case INST_NOTB:
@@ -694,25 +754,7 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack[bm->stack_size - 1].as_u64 = ~bm->stack[bm->stack_size - 1].as_u64;
 	bm->ip += 1;
 	break;
-	
-    case INST_SHR:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 >> bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
-	
-    case INST_SHL:
-	if(bm->stack_size < 2) {
-	    return ERR_STACK_UNDERFLOW;
-	}
-	bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 << bm->stack[bm->stack_size - 1].as_u64;
-	bm->stack_size -= 1;
-	bm->ip += 1;
-	break;
-
+		
     case INST_HALT:
 	bm->halt = 1;
 	break;
