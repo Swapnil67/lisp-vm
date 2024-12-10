@@ -149,6 +149,7 @@ static_assert(sizeof(Word) == 8, "The BM's Word is expected to be 64 bits");
 
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
+typedef size_t Arena;
 
 // Instruction Structure
 typedef struct {
@@ -232,7 +233,10 @@ typedef struct {
     size_t memory_capacity;
 
     char arena[BASM_ARENA_CAPACITY];
-    size_t arena_size;
+    
+    Arena arena_size;
+
+    size_t include_level;
 } Basm;
 
 
@@ -245,7 +249,7 @@ void print_unresolved_names(const Basm *basm);
 void print_names(const Basm *basm);
 
 void basm_save_to_file(Basm *basm, const char *file_path);
-void basm_translate_source(Basm *basm, String_View input_file_path, size_t level);
+void basm_translate_source(Basm *basm, String_View input_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 int basm_translate_literal(Basm *basm, String_View sv, Word *output);
 
@@ -1243,7 +1247,7 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     fclose(f);
 }
 
-void basm_translate_source(Basm *basm, String_View input_file_path, size_t level) {    
+void basm_translate_source(Basm *basm, String_View input_file_path) {    
     String_View original_source = basm_slurp_file(basm, input_file_path);
     String_View source = original_source;
     // printf("Source: \n%s\n", source.data);
@@ -1305,14 +1309,17 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 
 			   // printf("File Name: #%.*s#\n", (int) line.count, line.data);
 
-			   if(level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
+			   if(basm->include_level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
 			       fprintf(stderr,
 			       "%.*s:%d ERROR: exceeded maximum include level\n",
 			       SV_FORMAT(input_file_path), line_number);
 			   }
 			   
 			   // * Recursively Translate source file
-			   basm_translate_source(basm, line, level+1);
+			   basm->include_level += 1;
+			   basm_translate_source(basm, line);
+			   basm->include_level -= 1;
+			   
 		       }
 		       else {
 			   fprintf(stderr, "%.*s:%d: ERROR: include file path has to be surrounded by quotation marks\n",
