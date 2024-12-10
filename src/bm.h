@@ -103,6 +103,11 @@ typedef enum {
     INST_WRITE16,
     INST_WRITE32,
     INST_WRITE64,
+
+    INST_I2F,
+    INST_U2F,
+    INST_F2I,
+    INST_F2U,
   
     NUMBER_OF_INSTS
 } Inst_Type;
@@ -346,6 +351,11 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_WRITE16:	return "INST_WRITE16";
     case INST_WRITE32:	return "INST_WRITE32";
     case INST_WRITE64:	return "INST_WRITE64";
+
+    case INST_I2F:      return "INST_I2F";
+    case INST_U2F:      return "INST_U2F";
+    case INST_F2I:      return "INST_F2I";
+    case INST_F2U:      return "INST_F2U";
        
     case NUMBER_OF_INSTS:
     default:
@@ -420,6 +430,11 @@ const char *inst_name(Inst_Type type) {
     case INST_WRITE16:  return "write16";
     case INST_WRITE32:  return "write32";
     case INST_WRITE64:  return "write64";
+
+    case INST_I2F:      return "i2f";
+    case INST_U2F:      return "u2f";
+    case INST_F2I:      return "f2i";
+    case INST_F2U:      return "f2u";
     
     case NUMBER_OF_INSTS:
     default:
@@ -484,6 +499,11 @@ int inst_has_operand(Inst_Type type) {
     case INST_WRITE16:  return false;
     case INST_WRITE32:  return false;
     case INST_WRITE64:  return false;
+
+    case INST_I2F:      return false;
+    case INST_U2F:      return false;
+    case INST_F2I:      return false;
+    case INST_F2U:      return false;
     
     case NUMBER_OF_INSTS:
     default:
@@ -516,6 +536,16 @@ do {																		\
     (bm)->stack_size -= 1;															\
     (bm)->ip += 1;																\
 } while(false)																	\
+
+#define CAST_OP(bm, src, dst, cast)            \
+do {                                           \
+    if((bm)->stack_size < 1) {		       \			
+	return ERR_STACK_UNDERFLOW;	       \
+    }					       \
+    (bm)->stack[(bm)->stack_size - 1].as_##dst = cast (bm)->stack[(bm)->stack_size - 1].as_##src; \
+    (bm)->ip += 1;                             \
+} while (false);                               \
+
 
 // * Execute Single Instruction
 Err bm_execute_inst(Bm *bm) {
@@ -869,7 +899,23 @@ Err bm_execute_inst(Bm *bm) {
 	bm->stack_size -= 2;
 	bm->ip += 1;
     }	break;
-	
+
+    case INST_I2F: {
+	CAST_OP(bm, i64, f64, (double));
+    } break;
+
+    case INST_U2F: {
+	CAST_OP(bm, u64, f64, (double));
+    } break;    
+
+    case INST_F2I: {
+	CAST_OP(bm, f64, i64, (int64_t));
+    } break;    
+
+    case INST_F2U: {
+	CAST_OP(bm, f64, u64, (uint64_t) (int64_t));
+    } break;
+
     case NUMBER_OF_INSTS:
     default:
 	return TRAP_ILLEGAL_INST;
@@ -952,7 +998,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 
     // * Read program instructions
     bm->program_size = fread(bm->program, sizeof(bm->program[0]), meta.program_size, f);
-    printf("bm->program_size: %lld\n", bm->program_size);
+    // printf("bm->program_size: %lld\n", bm->program_size);
     if(bm->program_size != meta.program_size) {
         fprintf(stderr,
 	"ERROR: %s: read %lld program instructions, but expected %lld.\n", file_path, bm->program_size, meta.program_size);
@@ -961,7 +1007,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 
     // * Read static memory
     n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
-    printf("meta->memory_size: %ld\n", n);
+    // printf("meta->memory_size: %ld\n", n);
     if(n != meta.memory_size) {
         fprintf(stderr,
 	"ERROR: %s: read %zd bytes, but expected %lld.\n", file_path, n, meta.memory_size);
