@@ -19,6 +19,8 @@
 #endif
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof(xs[0]))
+
+#define BM_WORD_SIZE 8
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_EXECUTION_LIMIT 69
@@ -145,7 +147,7 @@ Word word_i64(int64_t i64);
 Word word_f64(double f64);
 Word word_ptr(void *ptr);
 
-static_assert(sizeof(Word) == 8, "The BM's Word is expected to be 64 bits");
+static_assert(sizeof(Word) == BM_WORD_SIZE, "The BM's Word is expected to be 64 bits");
 
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
@@ -936,7 +938,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm) {
     fprintf(stream, "Stack:\n");
     if(bm->stack_size > 0) {
 	for(Inst_Addr i = 0; i < bm->stack_size; ++i) {
-	    fprintf(stream, "u64:  %llu, i64: %lld, f64: %lf, ptr: %p\n",
+	    fprintf(stream, "u64:  %lu, i64: %ld, f64: %lf, ptr: %p\n",
 				bm->stack[i].as_u64,
 				bm->stack[i].as_i64,
 				bm->stack[i].as_f64,
@@ -983,20 +985,20 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 
     if(meta.program_size > BM_PROGRAM_CAPACITY) {
         fprintf(stderr,
-	"ERROR: %s: program section is too big. The file contains %lld program instruction. But the capacity is %d.\n", file_path, meta.program_size, BM_PROGRAM_CAPACITY);
+	"ERROR: %s: program section is too big. The file contains %ld program instruction. But the capacity is %d.\n", file_path, meta.program_size, BM_PROGRAM_CAPACITY);
         exit(1);	
     }
 
     if(meta.memory_capacity > BM_MEMORY_CAPACITY) {
         fprintf(stderr,
-	"ERROR: %s: memory section is too big. The file wants %lld bytes. But the capacity is %d.\n", file_path, meta.memory_capacity, BM_MEMORY_CAPACITY);
+	"ERROR: %s: memory section is too big. The file wants %ld bytes. But the capacity is %d.\n", file_path, meta.memory_capacity, BM_MEMORY_CAPACITY);
         exit(1);	
     }
 
 
     if(meta.memory_size > meta.memory_capacity) {
         fprintf(stderr,
-	"ERROR: %s: memory size %lld is greater than declared memory capacity %lld.\n", file_path, meta.memory_size, meta.memory_capacity);
+	"ERROR: %s: memory size %ld is greater than declared memory capacity %ld.\n", file_path, meta.memory_size, meta.memory_capacity);
         exit(1);	
     }
 
@@ -1005,7 +1007,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
     // printf("bm->program_size: %lld\n", bm->program_size);
     if(bm->program_size != meta.program_size) {
         fprintf(stderr,
-	"ERROR: %s: read %lld program instructions, but expected %lld.\n", file_path, bm->program_size, meta.program_size);
+	"ERROR: %s: read %ld program instructions, but expected %ld.\n", file_path, bm->program_size, meta.program_size);
         exit(1);	
     }
 
@@ -1014,7 +1016,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
     // printf("meta->memory_size: %ld\n", n);
     if(n != meta.memory_size) {
         fprintf(stderr,
-	"ERROR: %s: read %zd bytes, but expected %lld.\n", file_path, n, meta.memory_size);
+	"ERROR: %s: read %zd bytes, but expected %ld.\n", file_path, n, meta.memory_size);
         exit(1);	
     }    
 
@@ -1100,7 +1102,7 @@ int sv_eq(String_View a, String_View b) {
 void print_names(const Basm *basm) {
     printf("-------- NAMES: -------\n");
     for(size_t i = 0; i < basm->bindings_size; ++i) {
-	printf("%.*s ->  %llu\n",
+	printf("%.*s ->  %lu\n",
 	(int) basm->bindings[i].name.count,
 	basm->bindings[i].name.data,
 	basm->bindings[i].value.as_u64);
@@ -1110,7 +1112,7 @@ void print_names(const Basm *basm) {
 void print_unresolved_names(const Basm *basm) {
     printf("-------- UNRESOLVED_JMPS: -------\n");
     for(size_t i = 0; i < basm->defered_operands_size; ++i) {
-	printf("%lld -> %.*s\n",
+	printf("%lu -> %.*s\n",
 	basm->defered_operands[i].addr,
 	(int) basm->defered_operands[i].name.count,
 	basm->defered_operands[i].name.data);
