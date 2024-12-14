@@ -3,7 +3,7 @@
 
 jmp main
 
-%bind N 65000
+%bind N 10
 %bind BITS 8
 
 
