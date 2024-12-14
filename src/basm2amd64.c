@@ -14,38 +14,38 @@ Basm basm;
 
 void gen_print_i64(FILE *stream) {
     fprintf(stream, "print_i64:\n");
-    fprintf(stream, "	     ;; Extracting input from the BM's stack\n");
-    fprintf(stream, "	     mov rsi, [stack_top]\n");
-    fprintf(stream, "	     sub rsi, BM_WORD_SIZE\n");
-    fprintf(stream, "	     mov rax, [rsi]\n");
-    fprintf(stream, "	     mov [stack_top], rsi\n");
-    fprintf(stream, "	     ;; rax contains the value we need to print\n");
-    fprintf(stream, "	     mov rdi,  0		; counter of chars\n");
-    fprintf(stream, "	     ;; Adding a newline\n");
-    fprintf(stream, "	     dec rsp\n");
-    fprintf(stream, "	     inc rdi\n");
-    fprintf(stream, "	     mov BYTE [rsp], 10\n");
-    fprintf(stream, "	     .loop:\n");
-    fprintf(stream, "	     xor rdx, rdx\n");
-    fprintf(stream, "	     mov rbx, 10\n");
-    fprintf(stream, "	     div rbx\n");
-    fprintf(stream, "	     add rdx, '0'\n");
-    fprintf(stream, "	     dec rsp\n");
-    fprintf(stream, "	     inc rdi\n");
-    fprintf(stream, "	     mov [rsp], dl\n");
-    fprintf(stream, "	     cmp rax, 0\n");
-    fprintf(stream, "	     jne .loop\n");
-    fprintf(stream, "	     ;; rsp - points at the beginning of the buffer\n");
-    fprintf(stream, "	     ;; rdi - contains the size of the buffer\n");
-    fprintf(stream, "	     mov rbx, rdi\n");
-    fprintf(stream, "	     ;; write(STDOUT, buf, buf_size)\n");
-    fprintf(stream, "	     mov rax, SYS_WRITE\n");
-    fprintf(stream, "	     mov rdi, STDOUT		; stream\n");
-    fprintf(stream, "	     mov rsi, rsp		; buffer\n");
-    fprintf(stream, "	     mov rdx, rbx		; count\n");
-    fprintf(stream, "	     syscall\n");
-    fprintf(stream, "	     add rsp, rbx\n");
-    fprintf(stream, "	     ret\n");
+    fprintf(stream, "     ;; Extracting input from the BM's stack\n");
+    fprintf(stream, "	mov rsi, [stack_top]\n");
+    fprintf(stream, "	sub rsi, BM_WORD_SIZE\n");
+    fprintf(stream, "	mov rax, [rsi]\n");
+    fprintf(stream, "	mov [stack_top], rsi\n");
+    fprintf(stream, "	;; rax contains the value we need to print\n");
+    fprintf(stream, "	mov rdi,  0		; counter of chars\n");
+    fprintf(stream, "	;; Adding a newline\n");
+    fprintf(stream, "	dec rsp\n");
+    fprintf(stream, "	inc rdi\n");
+    fprintf(stream, "	mov BYTE [rsp], 10\n");
+    fprintf(stream, "	.loop:\n");
+    fprintf(stream, "	xor rdx, rdx\n");
+    fprintf(stream, "	mov rbx, 10\n");
+    fprintf(stream, "	div rbx\n");
+    fprintf(stream, "	add rdx, '0'\n");
+    fprintf(stream, "	dec rsp\n");
+    fprintf(stream, "	inc rdi\n");
+    fprintf(stream, "	mov [rsp], dl\n");
+    fprintf(stream, "	cmp rax, 0\n");
+    fprintf(stream, "	jne .loop\n");
+    fprintf(stream, "	;; rsp - points at the beginning of the buffer\n");
+    fprintf(stream, "	;; rdi - contains the size of the buffer\n");
+    fprintf(stream, "	mov rbx, rdi\n");
+    fprintf(stream, "	;; write(STDOUT, buf, buf_size)\n");
+    fprintf(stream, "	mov rax, SYS_WRITE\n");
+    fprintf(stream, "	mov rdi, STDOUT		; stream\n");
+    fprintf(stream, "	mov rsi, rsp		; buffer\n");
+    fprintf(stream, "	mov rdx, rbx		; count\n");
+    fprintf(stream, "	syscall\n");
+    fprintf(stream, "	add rsp, rbx\n");
+    fprintf(stream, "	ret\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -64,12 +64,15 @@ int main(int argc, char *argv[]) {
     printf("%%define SYS_EXIT 60\n");
     printf("%%define SYS_WRITE 1\n");
     printf("segment .text\n");
-     printf("global _start\n");
+    printf("global _start\n");
     gen_print_i64(stdout);
     printf("_start:\n");
-    
+
+    size_t jmp_if_escape_count = 0;
     for(size_t i = 0; i < basm.program_size; ++i) {
 	Inst inst = basm.program[i];
+	
+	printf("inst_%zu:\n", i);
 	switch(inst.type) {
 	case INST_NOP: assert(false && "TODO: NOP is not implemented");
 	case INST_PUSH: {
@@ -78,8 +81,33 @@ int main(int argc, char *argv[]) {
 	    printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
 	    printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
 	} break;
-	case INST_DUP: assert(false && "TODO: DUP is not implemented");
-	case INST_SWAP: assert(false && "TODO: SWAP is not implemented");
+	
+	case INST_DUP: {
+	    printf("    ;; dup %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rsi, [stack_top]\n");
+	    // * Get the value which needs to be duplicated in rdi
+	    printf("    mov rdi, rsi\n");
+	    printf("    sub rdi, BM_WORD_SIZE * (%"PRIu64" + 1)\n", inst.operand.as_u64);
+	    // * Copy the value to rsi via rax
+	    printf("    mov rax, [rdi]\n");
+	    printf("    mov [rsi], rax\n");
+	    // * Incr the stack ptr
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;
+	
+	case INST_SWAP: {
+	    printf("    ;; swap %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rdi, rsi\n");
+	    printf("    sub rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rax, [rsi]\n");         // temp1 = a
+	    printf("    mov rbx, [rdi]\n");         // temp2 = b
+	    printf("    mov [rsi], rbx\n");         // a = temp2
+	    printf("    mov [rdi], rax\n");         // b = temp1
+	} break;
+	
 	case INST_PLUSI: {
 	    printf("    ;; plusi\n");
 	    printf("    mov rsi, [stack_top]\n");
@@ -93,7 +121,18 @@ int main(int argc, char *argv[]) {
 	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
-	case INST_MINUSI: assert(false && "TODO: MINUSI is not implemented");
+	case INST_MINUSI: {
+	    printf("    ;; minusi\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");	    
+	    printf("    sub rax, rbx\n");
+	    printf("    mov [rsi], rax\n");
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;
 	
 	case INST_MULI: assert(false && "TODO: MULI is not implemented");
 	case INST_DIVI: assert(false && "TODO: DIVI is not implemented");
@@ -116,10 +155,58 @@ int main(int argc, char *argv[]) {
 	    }
 	} break;
 
-	case INST_JMP: assert(false && "TODO: JMP is not implemented");
-	case INST_JMP_IF: assert(false && "TODO: JMP_IF is not implemented");
-	case INST_NOT: assert(false && "TODO: NOT is not implemented");
-	case INST_EQI: assert(false && "TODO: EQI is not implemented");
+	case INST_JMP: {
+	    printf("    ;; TODO: jmp %"PRIu64"\n", inst.operand.as_u64);
+	    // printf("    mov rsi, [stack_top]\n")
+	} break;	
+
+	case INST_JMP_IF: {
+	    printf("    ;; TODO: jmp_if %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    printf("    mov [stack_top], rsi\n");
+	    printf("    cmp rax, 0\n");
+	    printf("    je jmp_if_escape_%zu\n", jmp_if_escape_count);
+	    
+	    // * Address to Label Translation
+	    printf("    mov rdi, inst_map\n");
+	    printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);	    
+	    printf("    jmp [rdi]\n");
+	    
+	    printf("jmp_if_escape_%zu:\n", jmp_if_escape_count);
+	    jmp_if_escape_count += 1;
+	} break;
+		
+	case INST_NOT:  {
+	    printf("    ;; not\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    printf("    cmp rax, 0\n");
+	    printf("    mov rax, 0\n");
+	    printf("    setz al\n");
+	    printf("    mov [rsi], rax\n");
+	} break;
+	
+	case INST_EQI: {
+	    printf("    ;; eqi\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");	    
+	    printf("    cmp rax, rbx\n");
+	    printf("    mov rax, 0\n");
+	    // * Sets zero flag in al register
+	    printf("    setz al\n");
+	    printf("    mov [rsi], rax\n");
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	    
+	} break;
+	
+	assert(false && "TODO: EQI is not implemented");
 	case INST_GEI: assert(false && "TODO: GEI is not implemented");
 	case INST_GTI: assert(false && "TODO: GTI is not implemented");
 	case INST_LEI: assert(false && "TODO: LEI is not implemented");
@@ -130,8 +217,10 @@ int main(int argc, char *argv[]) {
 	case INST_GTF: assert(false && "TODO: GTF is not implemented");
 	case INST_LEF: assert(false && "TODO: LEF is not implemented");
 	case INST_LTF: assert(false && "TODO: LTF is not implemented");
-    case INST_NEF:
-	assert(false && "TODO: NEF is not implemented");
+	
+	case INST_NEF: {
+	    printf("    ;; TODO nef\n");
+	} break;
 	
 	case INST_HALT: {
 	    printf("    ;; halt\n");	    
@@ -167,7 +256,11 @@ int main(int argc, char *argv[]) {
     printf("    ret\n");
     printf("segment .data\n");
     printf("stack_top: dq stack\n");
-
+    printf("inst_map: dq");
+    for(size_t i = 0; i < basm.program_size; ++i) {
+	printf(" inst_%zu,", i);
+    }
+    printf("\n");
     printf("segment .bss\n");
     printf("stack:	resq BM_STACK_CAPACITY\n");
 
