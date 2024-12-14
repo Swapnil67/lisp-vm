@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
     
     for(size_t i = 0; i < basm.program_size; ++i) {
 	Inst inst = basm.program[i];
+	printf("inst_%zu:\n", i);
 	switch(inst.type) {
 	case INST_NOP: assert(false && "TODO: NOP is not implemented");
 	case INST_PUSH: {
@@ -78,8 +79,36 @@ int main(int argc, char *argv[]) {
 	    printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
 	    printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
 	} break;
-	case INST_DUP: assert(false && "TODO: DUP is not implemented");
-	case INST_SWAP: assert(false && "TODO: SWAP is not implemented");
+	
+	case INST_DUP: {
+	    printf("    ;; dup %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rsi, [stack_top]\n");
+	    // * Get the value which needs to be duplicated in rdi
+	    printf("    mov rdi, rsi\n");
+	    printf("    sub rdi, BM_WORD_SIZE * (%"PRIu64" + 1)\n", inst.operand.as_u64);
+	    // * Copy the value to rsi via rax
+	    printf("    mov rax, [rdi]\n");
+	    printf("    mov [rsi], rax\n");
+	    // * Incr the stack ptr
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;
+	
+	case INST_SWAP: {
+	    printf("    ;; swap %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rdi, rsi\n");
+	    printf("    sub rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rax, [rsi]\n");         // temp1 = a
+	    printf("    mov rbx, [rdi]\n");         // temp2 = b
+	    printf("    mov [rsi], rbx\n");         // a = temp2
+	    printf("    mov [rdi], rax\n");         // b = temp1
+	    // printf("    add rsi, BM_WORD_SIZE\n");
+	    // printf("    mov [stack_top], rsi\n");
+	} break;
+	
+
 	case INST_PLUSI: {
 	    printf("    ;; plusi\n");
 	    printf("    mov rsi, [stack_top]\n");
@@ -93,7 +122,18 @@ int main(int argc, char *argv[]) {
 	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
-	case INST_MINUSI: assert(false && "TODO: MINUSI is not implemented");
+	case INST_MINUSI: {
+	    printf("    ;; minusi\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");	    
+	    printf("    sub rax, rbx\n");
+	    printf("    mov [rsi], rax\n");
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;
 	
 	case INST_MULI: assert(false && "TODO: MULI is not implemented");
 	case INST_DIVI: assert(false && "TODO: DIVI is not implemented");
@@ -116,10 +156,44 @@ int main(int argc, char *argv[]) {
 	    }
 	} break;
 
-	case INST_JMP: assert(false && "TODO: JMP is not implemented");
-	case INST_JMP_IF: assert(false && "TODO: JMP_IF is not implemented");
-	case INST_NOT: assert(false && "TODO: NOT is not implemented");
-	case INST_EQI: assert(false && "TODO: EQI is not implemented");
+	case INST_JMP: {
+	    printf("    ;; TODO: jmp %"PRIu64"\n", inst.operand.as_u64);
+	    // printf("    mov rsi, [stack_top]\n")
+	} break;	
+
+	case INST_JMP_IF: {
+	    printf("    ;; TODO: jmp_if\n");
+	} break;
+	
+	case INST_NOT:  {
+	    printf("    ;; not\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    printf("    cmp rax, 0\n");
+	    printf("    mov rax, 0\n");
+	    printf("    setz al\n");
+	    printf("    mov [rsi], rax\n");
+	} break;
+	
+	case INST_EQI: {
+	    printf("    ;; eqi\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");	    
+	    printf("    cmp rax, rbx\n");
+	    printf("    mov rax, 0\n");
+	    // * Sets zero flag in al register
+	    printf("    setz al\n");
+	    printf("    mov [rsi], rax\n");
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	    
+	} break;
+	
+	assert(false && "TODO: EQI is not implemented");
 	case INST_GEI: assert(false && "TODO: GEI is not implemented");
 	case INST_GTI: assert(false && "TODO: GTI is not implemented");
 	case INST_LEI: assert(false && "TODO: LEI is not implemented");
@@ -130,8 +204,10 @@ int main(int argc, char *argv[]) {
 	case INST_GTF: assert(false && "TODO: GTF is not implemented");
 	case INST_LEF: assert(false && "TODO: LEF is not implemented");
 	case INST_LTF: assert(false && "TODO: LTF is not implemented");
-    case INST_NEF:
-	assert(false && "TODO: NEF is not implemented");
+	
+	case INST_NEF: {
+	    printf("    ;; TODO nef\n");
+	} break;
 	
 	case INST_HALT: {
 	    printf("    ;; halt\n");	    
