@@ -1,10 +1,20 @@
 
 *.bm
+*.bm.sym
+*.asm
+*.o
+*.pp
+*.exe
+*.ilk
+*.obj
+*.pdb
+
 bme
 basm
 debasm
-*.pp
-
+basm2amd64
+/examples/*bm.sym
+/bdb
 playground/
 
 notes.md

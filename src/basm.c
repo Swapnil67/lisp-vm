@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     // printf("Source: \n%s\n", source.data);
     
     // * Translate the source in to bm virtural machine [Interpret the program]
-    basm_translate_source(&basm, cstr_as_sv(input_file_path), 0);
+    basm_translate_source(&basm, cstr_as_sv(input_file_path));
 
     // * Save the executable
     basm_save_to_file(&basm, output_file_path);

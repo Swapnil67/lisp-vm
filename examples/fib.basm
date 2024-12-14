@@ -21,9 +21,9 @@ main:
 
 	; Print the number
 	dup 0
-	native print_u64
+	native print_i64
 
-	plusf
+	plusi
 	swap 1
 
 	; Check counter condition

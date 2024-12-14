@@ -3,15 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-
-#define CAST_OP(bm, dst, src)
-do {
-    if((bm)->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    (bm)->->stack[(bm)->stack_size - 1].as_##dst = (double) (bm)->stack[(bm)->->stack_size - 1].as_##src;
-    (bm)->ip += 1;
-} while(false);
     
 
 int main(void) {

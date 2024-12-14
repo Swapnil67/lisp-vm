@@ -51,7 +51,7 @@ static Err bm_print_u64(Bm *bm) {
 	return ERR_STACK_UNDERFLOW;
     }
     // printf("Print Unsigned Integer\n");
-    printf("%lld\n", bm->stack[bm->stack_size-1].as_u64);
+    printf("%"PRIu64"\n", bm->stack[bm->stack_size-1].as_u64);
     bm->stack_size -= 1;
     return ERR_OK;
 }
@@ -61,7 +61,7 @@ static Err bm_print_i64(Bm *bm) {
 	return ERR_STACK_UNDERFLOW;
     }
     // printf("Print Integer\n");
-    printf("%lld\n", bm->stack[bm->stack_size-1].as_i64);
+    printf("%"PRIi64"\n", bm->stack[bm->stack_size-1].as_i64);
     bm->stack_size -= 1;
     return ERR_OK;
 }
@@ -189,8 +189,7 @@ int main(int argc, char **argv)
     else {
 	while (limit != 0 && !bm.halt) {
 	    bm_dump_stack(stdout, &bm);
-	    printf("Instruction: %s %lld\n",
-	    
+	    printf("Instruction: %s %"PRIu64"\n",
 	    inst_name(bm.program[bm.ip].type),
 	    bm.program[bm.ip].operand.as_u64);
 	    getchar();
