@@ -1,3 +1,4 @@
+
 #!/bin/sh
 
 set -xe
@@ -10,6 +11,7 @@ $CC $CFLAGS -o basm ./src/basm.c $LIBS
 $CC $CFLAGS -o bme ./src/bme.c $LIBS
 $CC $CFLAGS -o debasm ./src/debasm.c $LIBS
 $CC $CFLAGS -o basm2amd64 ./src/basm2amd64.c $LIBS
+$CC $CFLAGS -o xxd ./src/xxd.c $LIBS
 
 for example in `find examples/ -name \*.basm | sed "s/\.basm//"`; do
     # cpp -P "$example.basm" > "$example.basm.pp"

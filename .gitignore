@@ -13,6 +13,7 @@ bme
 basm
 debasm
 basm2amd64
+xxd
 /examples/*bm.sym
 /bdb
 playground/
