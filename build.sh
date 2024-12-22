@@ -16,7 +16,3 @@ for example in `find examples/ -name \*.basm | sed "s/\.basm//"`; do
     ./basm "$example.basm" "$example.bm"
     # rm -r "$example.basm.pp"
 done
-
-
-
-
