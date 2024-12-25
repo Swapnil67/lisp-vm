@@ -1,7 +1,12 @@
-%include "./examples/natives.hasm"
-jmp main
+;; %include "./examples/natives.hasm"
+%entry main
+
+do_some:
+	ret
 
 main:
-	push 67
-	native alloc
+	;; push 67
+	;; native alloc
+	push 1
+	jmp do_some
 	halt

@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-jmp main
+%entry main
 
 main:
 	push 420

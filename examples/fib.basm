@@ -6,7 +6,7 @@
 ; 1
 ; 0
 
-jmp main
+%entry main
 
 main: 
   ; First two fibonacci numbers & Counter  

@@ -120,7 +120,11 @@ typedef struct {
     const char *data;
 } String_View;
 
-#define SV_FORMAT(sv) (int) sv.count, sv.data
+#define SV_Fmt ".*s"
+#define SV_Arg(sv) (int) sv.count, sv.data
+// USAGE:
+    // String_View name = ...
+    // printf("Name :%"SV_Fmt"\n", SV_Arg(name))
 
 String_View cstr_as_sv(const char *cstr);
 String_View sv_trim_left(String_View sv);
@@ -203,6 +207,7 @@ PACK(struct Bm_File_Meta {
     uint16_t magic;
     uint16_t version;
     uint64_t program_size;
+    uint64_t entry;
     uint64_t memory_size;
     uint64_t memory_capacity;
 });
@@ -230,6 +235,9 @@ typedef struct {
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
+    uint64_t entry;
+    bool has_entry;
+    String_View deferred_entry_binding_name;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -254,7 +262,7 @@ void print_names(const Basm *basm);
 void basm_save_to_file(Basm *basm, const char *file_path);
 void basm_translate_source(Basm *basm, String_View input_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
-int basm_translate_literal(Basm *basm, String_View sv, Word *output);
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 
 #endif // BM_H_
 
@@ -969,7 +977,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
         exit(1);
     }
     // * Verify the magic number
-    if(meta.magic != BM_FILE_MAGIC){
+    if(meta.magic != BM_FILE_MAGIC) {
         fprintf(stderr,
 	"ERROR: %s does not appear to be a valid BM file. "
 	"Unexpected magic %04X. Expected %04X.\n", file_path, meta.magic, BM_FILE_MAGIC);
@@ -989,6 +997,9 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 	"ERROR: %s: program section is too big. The file contains %"PRIu64" program instruction. But the capacity is %d.\n", file_path, meta.program_size, BM_PROGRAM_CAPACITY);
         exit(1);	
     }
+
+    // * Entry Point
+    bm->ip = meta.entry;
 
     if(meta.memory_capacity > BM_MEMORY_CAPACITY) {
         fprintf(stderr,
@@ -1122,13 +1133,12 @@ void print_unresolved_names(const Basm *basm) {
 
 void *basm_alloc(Basm *basm, size_t size) {
     assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
-
     void *result = basm->arena + basm->arena_size;
     basm->arena_size += size;
     return result;
 }
 
-// * Find the address of a particular name in Basm 
+// * Finds the address to which given name is bind to 
 int basm_resolve_binding(Basm *basm, String_View name, Word *output) {
     for (size_t i = 0; i < basm->bindings_size; ++i) {
         if (sv_eq(basm->bindings[i].name, name)) {
@@ -1157,9 +1167,10 @@ int basm_bind_value(Basm *basm, String_View name, Word value) {
 
 void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name) {
     assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
-    basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand){
+    basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand) {
         .addr = addr,
-        .name = name};
+        .name = name
+    };
 }
 
 Word basm_push_string_to_memory(Basm *basm, String_View sv) {
@@ -1176,40 +1187,6 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv) {
     }
 
     return result;
-}    
-
-int basm_translate_literal(Basm *basm, String_View sv, Word *output) {
-    
-    // * Encounter String
-    if(sv.count > 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
-	sv.data += 1;
-	sv.count -= 2;
-	*output = basm_push_string_to_memory(basm, sv);
-    }
-    else {
-    	assert(sv.count < 1024);
-	char cstr[sv.count + 1];
-	char *endptr = 0;
-
-	memcpy(cstr, sv.data, sv.count);
-	cstr[sv.count] = '\0';
-
-	Word result = {0};
-
-	// * Try to parse it as uint64_t first
-	result.as_u64 = strtoull(cstr, &endptr, 10);
-
-	if((size_t)(endptr - cstr) != sv.count) {
-	    // * Try to parse it as double
-	    result.as_f64 = strtod(cstr, &endptr);
-	    if((size_t)(endptr - cstr) != sv.count) {
-		return false;
-	    }
-	}
-
-	*output = result;
-    }
-    return true;
 }
 
 void basm_save_to_file(Basm *basm, const char *file_path) {
@@ -1223,6 +1200,7 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     Bm_File_Meta meta = {
         .magic = BM_FILE_MAGIC,
         .version = BM_FILE_VERSION,
+	.entry = basm->entry,
         .program_size = basm->program_size,
         .memory_size = basm->memory_size,
         .memory_capacity = basm->memory_capacity,
@@ -1248,6 +1226,63 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     }
 
     fclose(f);
+}
+
+
+// void *basm_alloc(Basm *basm, size_t size) {
+//     assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
+
+//     void *result = basm->arena + basm->arena_size;
+//     basm->arena_size += size;
+//     return result;
+// }
+
+void* arena_sv_to_cstr(Basm *basm, String_View sv) {
+    assert(basm->arena_size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
+
+    // bring the pointer to the last address in arena
+    void *result = basm->arena + basm->arena_size;
+    basm->arena_size += (sv.count + 1);
+    memcpy(result, sv.data, sv.count);
+    // result[basm->arena_size] = '\0'; 
+    return result;
+}
+
+
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
+    // * Encounter String
+    if(sv.count > 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
+	sv.data += 1;
+	sv.count -= 2;
+	*output = basm_push_string_to_memory(basm, sv);
+    }
+    else {
+    	// assert(sv.count < 1024);
+	// char cstr[sv.count + 1];
+	// char *endptr = 0;
+	// memcpy(cstr, sv.data, sv.count);
+	// cstr[sv.count] = '\0';
+
+	// TODO Implement this function
+	char *cstr = arena_sv_to_cstr(basm, sv);
+	char *endptr = 0;
+	
+	Word result = {0};
+
+	// * Try to parse it as uint64_t first
+	result.as_u64 = strtoull(cstr, &endptr, 10);
+
+	if((size_t)(endptr - cstr) != sv.count) {
+	    // * Try to parse it as double
+	    result.as_f64 = strtod(cstr, &endptr);
+	    if((size_t)(endptr - cstr) != sv.count) {
+		return false;
+	    }
+	}
+
+	*output = result;
+    }
+    return true;
 }
 
 void basm_translate_source(Basm *basm, String_View input_file_path) {    
@@ -1285,21 +1320,21 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       
 		       Word word = {0};
 		       if(!basm_translate_literal(basm, value, &word)) {
-			   fprintf(stderr, "%.*s:%d: ERROR: `%.*s` is not a number\n",
-			   SV_FORMAT(input_file_path), line_number, SV_FORMAT(value));
+			   fprintf(stderr, "%"SV_Fmt":%d: ERROR: `%"SV_Fmt"` is not a number\n",
+			   SV_Arg(input_file_path), line_number, SV_Arg(value));
 			   exit(1);
 		       }
 		       
 		       // * Check if name already bind to some other instructions
 		       if(!basm_bind_value(basm, name, word)) {
-			   fprintf(stderr, "%.*s:%d: ERROR: name `%.*s` is already bound\n",
-			   SV_FORMAT(input_file_path), line_number, SV_FORMAT(name));
+			   fprintf(stderr, "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound\n",
+			   SV_Arg(input_file_path), line_number, SV_Arg(name));
 			   exit(1);
 		       }
 		   }
 		   else {
-		       fprintf(stderr, "%.*s:%d: ERROR: binding name is not provided\n",
-		       SV_FORMAT(input_file_path), line_number);
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: binding name is not provided\n",
+		       SV_Arg(input_file_path), line_number);
 		       exit(1);
 		   }
 	       } else if(sv_eq(token, cstr_as_sv("include"))) {
@@ -1314,8 +1349,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 
 			   if(basm->include_level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
 			       fprintf(stderr,
-			       "%.*s:%d ERROR: exceeded maximum include level\n",
-			       SV_FORMAT(input_file_path), line_number);
+			       "%"SV_Fmt":%d ERROR: exceeded maximum include level\n",
+			       SV_Arg(input_file_path), line_number);
 			   }
 			   
 			   // * Recursively Translate source file
@@ -1325,19 +1360,38 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 			   
 		       }
 		       else {
-			   fprintf(stderr, "%.*s:%d: ERROR: include file path has to be surrounded by quotation marks\n",
-			   SV_FORMAT(input_file_path), line_number);
+			   fprintf(stderr, "%"SV_Fmt":%d: ERROR: include file path has to be surrounded by quotation marks\n",
+			   SV_Arg(input_file_path), line_number);
 			   exit(1);
 		       }
 		       
 		   } else {
-		       fprintf(stderr, "%.*s:%d: ERROR: file path is not provided\n",
-		       SV_FORMAT(input_file_path), line_number);
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: file path is not provided\n",
+		       SV_Arg(input_file_path), line_number);
 		       exit(1);
 		   }
-	       } else {
+	       } else if(sv_eq(token, cstr_as_sv("entry"))) {
+		   if(basm->has_entry) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: entry point has been already set!\n", SV_Arg(input_file_path), line_number);
+		   }
+		   
+		   line = sv_trim(line);
+		   if(line.count == 0) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: literal or binding name is expected.\n", SV_Arg(input_file_path), line_number);
+		       exit(1);
+		   }
+		   
+		   Word entry = {0};
+		   if(!basm_translate_literal(basm, line, &entry)) {
+		       basm->deferred_entry_binding_name = line;
+		   } else {
+		       basm->entry = entry.as_u64;
+		   }
+		   basm->has_entry = true;
+	       }
+	       else {
 		   fprintf(stderr, "%.*s:%d: ERROR: unknown pre-processor directive `%.*s`\n",
-		   SV_FORMAT(input_file_path), line_number, SV_FORMAT(token));
+		   SV_Arg(input_file_path), line_number, SV_Arg(token));
 		   exit(1);		   
 	       }
 	       
@@ -1348,10 +1402,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       .count = token.count - 1,		   
 		       .data = token.data
 		   };
+		   
+		   // fprintf(stdout, "Name: %"SV_Fmt", Address: %"PRIu64"\n", SV_Arg(name), basm->program_size);
 
 		   if(!basm_bind_value(basm, name, word_u64(basm->program_size))) {
-		       fprintf(stderr, "%.*s:%d: ERROR: binding `%.*s` is already defined\n",
-		       SV_FORMAT(input_file_path), line_number, SV_FORMAT(name));
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: binding `%"SV_Fmt"` is already defined\n",
+		       SV_Arg(input_file_path), line_number, SV_Arg(name));
 		       exit(1);		       
 		   }
 		   
@@ -1362,7 +1418,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 	       // * Instruction
 	       if(token.count > 0) {
 		   String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-		   
+		   // fprintf(stdout, "Token = %"SV_Fmt" at %"PRIu64"\n", SV_Arg(token), basm->program_size);
 		   Inst_Type inst_type = INST_NOP;
 		   if(inst_by_name(token, &inst_type)) {
 		       assert(basm->program_size < BM_PROGRAM_CAPACITY);
@@ -1370,8 +1426,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       
 		       if(inst_has_operand(inst_type)) {
 			   if(operand.count == 0) {
-			       fprintf(stderr, "%.*s:%d: ERROR: instruction `%.*s` requires an operand\n",
-			       SV_FORMAT(input_file_path), line_number,
+			       fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
+			       SV_Arg(input_file_path), line_number,
 			       (int) token.count, token.data);
 			       exit(1);
 			   }
@@ -1380,15 +1436,16 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 			       basm,
 			       operand,
 			       &basm->program[basm->program_size].operand)) {
-			       // * or parse operand as name
-			       basm_push_defered_operand(basm, basm->program_size, operand);
+				   // fprintf(stdout, "Operand = %"SV_Fmt" at %"PRIu64"\n", SV_Arg(operand), basm->program_size);
+				   // * or parse operand as name
+				   basm_push_defered_operand(basm, basm->program_size, operand);
 			   }
 		       }
 		       // Increase the program_size
 		       basm->program_size += 1;
 		   } else {
-		       fprintf(stderr, "%.*s:%d: ERROR: unknown instruction `%.*s`\n",
-		       SV_FORMAT(input_file_path), line_number, SV_FORMAT(token));
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: unknown instruction `%"SV_Fmt"`\n",
+		       SV_Arg(input_file_path), line_number, SV_Arg(token));
 		       exit(1);
 		   }
 	       }
@@ -1396,10 +1453,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
       }
   }
 
- // print_names(basm);
- // print_unresolved_names(basm);
-
-  // * Dereferencing the jump names to address
+  // * Dereferencing the jmp names to address
   for(size_t i = 0; i < basm->defered_operands_size; ++i) {
       String_View binding = basm->defered_operands[i].name;   
       if(!basm_resolve_binding(
@@ -1407,11 +1461,27 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 	  binding,
 	  &basm->program[basm->defered_operands[i].addr].operand
       )) {
-	  fprintf(stderr, "%.*s ERROR: unknown binding `%.*s`\n",
-	  SV_FORMAT(input_file_path), SV_FORMAT(binding));
+	  fprintf(stderr, "%"SV_Fmt" ERROR: unknown binding `%"SV_Fmt"`\n",
+	  SV_Arg(input_file_path), SV_Arg(binding));
 	  exit(1);	  
       }
   }
+
+  if(basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
+      Word output = {0};
+      if(!basm_resolve_binding(
+          basm,
+	  basm->deferred_entry_binding_name,
+	  &output
+      )) {
+	  fprintf(stderr, "%"SV_Fmt" ERROR: unknown binding `%"SV_Fmt"`\n",
+	  SV_Arg(input_file_path), SV_Arg(basm->deferred_entry_binding_name));
+	  exit(1);	  
+      }
+      basm->entry = output.as_u64;
+  }
+  // print_names(basm);
+  // print_unresolved_names(basm);
 }
 
 
@@ -1420,7 +1490,7 @@ String_View basm_slurp_file(Basm *basm, String_View file_path)
     char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
     if(file_path_cstr == NULL) {
         fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
-                SV_FORMAT(file_path),
+                SV_Arg(file_path),
                 strerror(errno));
         exit(1);
     }
