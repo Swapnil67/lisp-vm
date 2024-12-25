@@ -1,39 +1,43 @@
 %include "./examples/natives.hasm"
 
-nop
-push 1.0   ; n
-push 1.0   ; n!
-push 1.0   ; sum
+%entry main
 
-loop:
+main:
 
-  ; sum + (1 / n!)
-  push 1.0
-  dup 2  
-  divf
-  plusf
+    push 1.0   ; n
+    push 1.0   ; n!
+    push 1.0   ; sum
 
-  ; (n + 1)
-  swap 2
-  push 1.0
-  plusf
-  dup 0
-  swap 2
-  ; n! * (n + 1)
-  mulf
+    loop:
 
-  ; Get the initial positions
-  swap 1
-  swap 2
+      ; sum + (1 / n!)
+      push 1.0
+      dup 2  
+      divf
+      plusf
 
-  ; Break condition
-  dup 2
-  push 10.0
-  swap 1
-  gef
+      ; (n + 1)
+      swap 2
+      push 1.0
+      plusf
+      dup 0
+      swap 2
+      ; n! * (n + 1)
+      mulf
 
-jmp_if loop
+      ; Get the initial positions
+      swap 1
+      swap 2
 
-native print_f64
+      ; Break condition
+      dup 2
+      push 10.0
+      swap 1
+      gef
 
-halt
+    jmp_if loop
+
+    native print_f64
+
+    halt
+

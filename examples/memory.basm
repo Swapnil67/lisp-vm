@@ -1,8 +1,10 @@
 ;; Fill up the memory with numbers from 0 to N
 
 %include "./examples/natives.hasm"
-
+%entry main
 %bind N 256
+
+main:
 
        push 0		; i
 loop:
