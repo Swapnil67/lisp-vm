@@ -2,18 +2,22 @@
 
 %bind hello "Hello, World"
 
-; Pointer Arithmetics
-push hello
-push 12
-plusi
+%entry main
 
-; New line ASCII 10
-push 10
-write8
+main:
+    ; Pointer Arithmetics
+    push hello
+    push 12
+    plusi
 
-; Print Hello World
-push hello
-push 13
-native write
+    ; New line ASCII 10
+    push 10
+    write8
 
-halt
+    ; Print Hello World
+    push hello
+    push 13
+    native write
+
+    halt
+

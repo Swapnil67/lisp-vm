@@ -1,7 +1,7 @@
 ;; Print bits of a number
 %include "./examples/natives.hasm"
 
-jmp main
+%entry main
 
 %bind N 10
 %bind BITS 8

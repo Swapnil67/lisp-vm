@@ -1,6 +1,6 @@
 %include "./examples/natives.hasm"
 
-jmp main
+%entry main
 
 %bind N 30
 
