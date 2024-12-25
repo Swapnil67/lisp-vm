@@ -203,6 +203,7 @@ PACK(struct Bm_File_Meta {
     uint16_t magic;
     uint16_t version;
     uint64_t program_size;
+    uint64_t entry;
     uint64_t memory_size;
     uint64_t memory_capacity;
 });
@@ -969,7 +970,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
         exit(1);
     }
     // * Verify the magic number
-    if(meta.magic != BM_FILE_MAGIC){
+    if(meta.magic != BM_FILE_MAGIC) {
         fprintf(stderr,
 	"ERROR: %s does not appear to be a valid BM file. "
 	"Unexpected magic %04X. Expected %04X.\n", file_path, meta.magic, BM_FILE_MAGIC);
@@ -989,6 +990,9 @@ void bm_load_program_from_file(Bm *bm, const char *file_path) {
 	"ERROR: %s: program section is too big. The file contains %"PRIu64" program instruction. But the capacity is %d.\n", file_path, meta.program_size, BM_PROGRAM_CAPACITY);
         exit(1);	
     }
+
+    // * Entry Point
+    bm->ip = meta.entry;
 
     if(meta.memory_capacity > BM_MEMORY_CAPACITY) {
         fprintf(stderr,
