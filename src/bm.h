@@ -203,6 +203,7 @@ PACK(struct Bm_File_Meta {
     uint16_t magic;
     uint16_t version;
     uint64_t program_size;
+    uint64_t entry;
     uint64_t memory_size;
     uint64_t memory_capacity;
 });
