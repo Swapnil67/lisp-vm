@@ -16,6 +16,7 @@ basm2amd64
 xxd
 /examples/*bm.sym
 /bdb
+/build
 playground/
 
 notes.md
