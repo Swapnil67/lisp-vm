@@ -6,46 +6,17 @@
 
 #include "bm.h"
 
+#include "natives.asm.h"
+
 static void usage(FILE *stream) {
     fprintf(stream, "Usage: ./basm2amd64 <input.basm> \n");
 }
 
+
 Basm basm;
 
-void gen_print_i64(FILE *stream) {
-    fprintf(stream, "print_i64:\n");
-    fprintf(stream, "     ;; Extracting input from the BM's stack\n");
-    fprintf(stream, "	mov rsi, [stack_top]\n");
-    fprintf(stream, "	sub rsi, BM_WORD_SIZE\n");
-    fprintf(stream, "	mov rax, [rsi]\n");
-    fprintf(stream, "	mov [stack_top], rsi\n");
-    fprintf(stream, "	;; rax contains the value we need to print\n");
-    fprintf(stream, "	mov rdi,  0		; counter of chars\n");
-    fprintf(stream, "	;; Adding a newline\n");
-    fprintf(stream, "	dec rsp\n");
-    fprintf(stream, "	inc rdi\n");
-    fprintf(stream, "	mov BYTE [rsp], 10\n");
-    fprintf(stream, "	.loop:\n");
-    fprintf(stream, "	xor rdx, rdx\n");
-    fprintf(stream, "	mov rbx, 10\n");
-    fprintf(stream, "	div rbx\n");
-    fprintf(stream, "	add rdx, '0'\n");
-    fprintf(stream, "	dec rsp\n");
-    fprintf(stream, "	inc rdi\n");
-    fprintf(stream, "	mov [rsp], dl\n");
-    fprintf(stream, "	cmp rax, 0\n");
-    fprintf(stream, "	jne .loop\n");
-    fprintf(stream, "	;; rsp - points at the beginning of the buffer\n");
-    fprintf(stream, "	;; rdi - contains the size of the buffer\n");
-    fprintf(stream, "	mov rbx, rdi\n");
-    fprintf(stream, "	;; write(STDOUT, buf, buf_size)\n");
-    fprintf(stream, "	mov rax, SYS_WRITE\n");
-    fprintf(stream, "	mov rdi, STDOUT		; stream\n");
-    fprintf(stream, "	mov rsi, rsp		; buffer\n");
-    fprintf(stream, "	mov rdx, rbx		; count\n");
-    fprintf(stream, "	syscall\n");
-    fprintf(stream, "	add rsp, rbx\n");
-    fprintf(stream, "	ret\n");
+static void gen_print_i64(FILE *stream) {
+    fwrite(src_natives_asm, sizeof(src_natives_asm[0]), src_natives_asm_len, stream);
 }
 
 int main(int argc, char *argv[]) {

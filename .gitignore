@@ -13,8 +13,10 @@ bme
 basm
 debasm
 basm2amd64
+xxd
 /examples/*bm.sym
 /bdb
+/build
 playground/
 
 notes.md
@@ -28,10 +30,6 @@ notes.md
 auto-save-list
 tramp
 .\#*
-
-# Org-mode
-.org-id-locations
-*_archive
 
 # flymake-mode
 *_flymake.*
