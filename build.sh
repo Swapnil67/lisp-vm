@@ -17,9 +17,11 @@ $CC $CFLAGS -o xxd ./src/xxd.c $LIBS
 
 $CC $CFLAGS -o basm2amd64 ./src/basm2amd64.c $LIBS
 
+mkdir -p ./build/examples
+
 for example in `find examples/ -name \*.basm | sed "s/\.basm//"`; do
     # cpp -P "$example.basm" > "$example.basm.pp"
-    ./basm "$example.basm" "$example.bm"
+    ./basm "$example.basm" "./build/$example.bm"
     # rm -r "$example.basm.pp"
 done
 
