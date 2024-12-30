@@ -2,16 +2,67 @@
 %bind free             1
 %bind print_f64        2
 %bind print_i64        3 
-;; %bind print_u64        4
+%bind print_u64        4
 %bind print_ptr        5
 %bind dump_memory      6
 %bind write            7
 
+%bind print_memory     "*********************************"
 
-;; x mod 10
-;; x
-print_u64:
-     dup 0
-     modi 10
+reverse:
+	ret
+
+print_u64_:
+     swap 1
+     push print_memory
+
+print_u64_loop:
+     dup 1
+     push 10
+     modi
      push '0'
+     plusi
+
+     dup 1
+     swap 1
+     write8
+
+     ;; update the memory
+     push 1
+     plusi
+
+     ;; Get back to original state
+     swap 1
+     push 10
+     divi
+     swap 1
+
+     ;; Check equal to zero
+     dup 1
+     push 0
+     eqi
+     not
+     jmp_if print_u64_loop
+
+     ;; Print new line
+     dup 0
+     push 10
+     write8
+
+     ;; Incr the memory pointer
+     push 1
+     plusi
+
+     ;; Write the data from memory to stdout
+     push print_memory
+     swap 1
+     minusi
+
+     push print_memory
+     swap 1
+
+     native write
+
+     drop
+
      ret
