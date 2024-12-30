@@ -23,11 +23,12 @@ print_u64_loop:
      push '0'
      plusi
 
+     ;; Write to buffer memory
      dup 1
      swap 1
      write8
 
-     ;; update the memory
+     ;; update the buffer memory
      push 1
      plusi
 
@@ -44,6 +45,8 @@ print_u64_loop:
      not
      jmp_if print_u64_loop
 
+print_u64_after_loop:
+
      ;; Print new line
      dup 0
      push 10
@@ -53,9 +56,8 @@ print_u64_loop:
      push 1
      plusi
 
-     ;; Write the data from memory to stdout
+     ;; Write the data from buffer memory to stdout
      push print_memory
-     swap 1
      minusi
 
      push print_memory
