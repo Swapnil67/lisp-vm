@@ -185,6 +185,7 @@ int main(int argc, char **argv)
 	    fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
 	    return 1;
 	}
+	// bm_dump_stack(stdout, &bm);	
     }
     else {
 	while (limit != 0 && !bm.halt) {

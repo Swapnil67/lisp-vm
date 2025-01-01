@@ -1174,22 +1174,6 @@ void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name) {
     };
 }
 
-Word basm_push_string_to_memory(Basm *basm, String_View sv) {
-    assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
-    Word result = word_u64(basm->memory_size);
-
-    // * copy sv.count amount of bytes to basm->memory buffer
-    memcpy(basm->memory + basm->memory_size, sv.data, sv.count);
-
-    basm->memory_size += sv.count;
-
-    if(basm->memory_size > basm->memory_capacity) {
-	basm->memory_capacity = basm->memory_size;
-    }
-
-    return result;
-}
-
 void basm_save_to_file(Basm *basm, const char *file_path) {
     FILE *f  = fopen(file_path, "wb");
     // printf("%ld", sizeof(program[1]));
@@ -1249,6 +1233,21 @@ void* arena_sv_to_cstr(Basm *basm, String_View sv) {
     return result;
 }
 
+Word basm_push_string_to_memory(Basm *basm, String_View sv) {
+    assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
+    Word result = word_u64(basm->memory_size);
+
+    // * copy sv.count amount of bytes to basm->memory buffer
+    memcpy(basm->memory + basm->memory_size, sv.data, sv.count);
+
+    basm->memory_size += sv.count;
+
+    if(basm->memory_size > basm->memory_capacity) {
+	basm->memory_capacity = basm->memory_size;
+    }
+
+    return result;
+}
 
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
     // * Encounter Character
