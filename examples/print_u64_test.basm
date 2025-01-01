@@ -2,7 +2,7 @@
 
 main:
 	push 123456789
-	call print_u64_
+	call dump_u64
 	halt
 
 %entry main
