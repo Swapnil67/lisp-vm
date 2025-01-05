@@ -176,7 +176,11 @@ int main(int argc, char *argv[]) {
 	} break;
 
 	case INST_JMP: {
-	    printf("    ;; TODO: jmp %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    ;; jmp %"PRIu64"\n", inst.operand.as_u64);
+	    // * Address to Label Translation
+	    printf("    mov rdi, inst_map\n");
+	    printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);	    
+	    printf("    jmp [rdi]\n");
 	} break;	
 
 	case INST_JMP_IF: {
