@@ -12,12 +12,7 @@ static void usage(FILE *stream) {
     fprintf(stream, "Usage: ./basm2amd64 <input.basm> \n");
 }
 
-
-Basm basm;
-
-static void gen_print_i64(FILE *stream) {
-    fwrite(src_natives_asm, sizeof(src_natives_asm[0]), src_natives_asm_len, stream);
-}
+Basm basm = {0};
 
 int main(int argc, char *argv[]) {
     if(argc < 2) {
@@ -36,7 +31,6 @@ int main(int argc, char *argv[]) {
     printf("%%define SYS_WRITE 1\n");
     printf("segment .text\n");
     printf("global _start\n");
-    gen_print_i64(stdout);
 
     size_t jmp_if_escape_count = 0;
     for(size_t i = 0; i < basm.program_size; ++i) {
@@ -56,6 +50,7 @@ int main(int argc, char *argv[]) {
 	    printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
 	} break;
 	
+	// * Drops the top of stack
 	case INST_DROP: {
 	    printf("    ;; drop\n");
 	    printf("    mov rsi, [stack_top]\n");
@@ -200,7 +195,6 @@ int main(int argc, char *argv[]) {
 	    
 	} break;
 	
-	assert(false && "TODO: EQI is not implemented");
 	case INST_GEI: assert(false && "TODO: GEI is not implemented");
 	case INST_GTI: assert(false && "TODO: GTI is not implemented");
 	case INST_LEI: assert(false && "TODO: LEI is not implemented");
@@ -258,7 +252,7 @@ int main(int argc, char *argv[]) {
 
     printf("    ret\n");
     printf("segment .data\n");
-    printf("stack_top: dq stack\n");
+    printf("stack_top: dq stackn\n");
     printf("inst_map: dq");
     for(size_t i = 0; i < basm.program_size; ++i) {
 	printf(" inst_%zu,", i);
