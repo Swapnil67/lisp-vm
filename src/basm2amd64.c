@@ -56,6 +56,13 @@ int main(int argc, char *argv[]) {
 	    printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
 	} break;
 	
+	case INST_DROP: {
+	    printf("    ;; drop\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;
+	
 	case INST_DUP: {
 	    printf("    ;; dup %"PRIu64"\n", inst.operand.as_u64);
 	    printf("    mov rsi, [stack_top]\n");
@@ -109,20 +116,34 @@ int main(int argc, char *argv[]) {
 	} break;
 	
 	case INST_MULI: assert(false && "TODO: MULI is not implemented");
-	case INST_DIVI: assert(false && "TODO: DIVI is not implemented");
-	case INST_MODI: assert(false && "TODO: MODI is not implemented");
+	
+	case INST_DIVI: {
+	    printf("    ;; TODO divi\n");
+	} break;
+
+	case INST_MODI: {
+	    printf("    ;; TODO modi\n");
+	} break;
+	
 	case INST_PLUSF: assert(false && "TODO: PLUSF is not implemented");
 	case INST_MINUSF: assert(false && "TODO: MINUSF is not implemented");
 	case INST_MULF: assert(false && "TODO: MULF is not implemented");
 	case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
-	case INST_DROP: assert(false && "TODO: DROP is not implemented");
-	case INST_RET: assert(false && "TODO: RET is not implemented");
-	case INST_CALL: assert(false && "TODO: CALL is not implemented");
+	
+	case INST_RET: {
+	    printf("    ;; TODO ret\n");
+	} break;
+	
+	case INST_CALL: {
+	    printf("    ;; TODO call\n");
+	} break;
 	
 	case INST_NATIVE: {
 	    if(inst.operand.as_u64 == 3) {
 		printf("    ;; native print_i64\n");
 		printf("    call print_i64\n");
+	    } else if(inst.operand.as_u64 == 7) {
+		printf("    ;; TODO native write\n");
 	    }
 	    else {
 		assert(false && "Unsupported native functions\n");
@@ -131,11 +152,10 @@ int main(int argc, char *argv[]) {
 
 	case INST_JMP: {
 	    printf("    ;; TODO: jmp %"PRIu64"\n", inst.operand.as_u64);
-	    // printf("    mov rsi, [stack_top]\n")
 	} break;	
 
 	case INST_JMP_IF: {
-	    printf("    ;; TODO: jmp_if %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
 	    printf("    mov rsi, [stack_top]\n");
 	    printf("    sub rsi, BM_WORD_SIZE\n");
 	    printf("    mov rax, [rsi]\n");
@@ -209,11 +229,20 @@ int main(int argc, char *argv[]) {
 	case INST_SHR: assert(false && "TODO: SHR is not implemented");
 	case INST_SHL: assert(false && "TODO: SHL is not implemented");
 	case INST_NOTB: assert(false && "TODO: NOTB is not implemented");
-	case INST_READ8: assert(false && "TODO: READ8 is not implemented");
+	case INST_READ8: {
+	    printf("    ;; TODO read8\n");
+	    // * move addr of top of stack to rsi pointer
+	    // printf("    mov rsi, [stack_top]\n");
+	    // printf("    sub rsi, BM_WORD_SIZE\n");
+	    // // * Move value of top of stack to rax register
+	    // printf("    mov rax, [rsi]\n");
+	} break;	
 	case INST_READ16: assert(false && "TODO: READ16 is not implemented");
 	case INST_READ32: assert(false && "TODO: READ32 is not implemented");
 	case INST_READ64: assert(false && "TODO: READ64 is not implemented");
-	case INST_WRITE8: assert(false && "TODO: WRITE8 is not implemented");
+	case INST_WRITE8: {
+	    printf("    ;; TODO write8\n");
+	} break;
 	case INST_WRITE16: assert(false && "TODO: WRITE16 is not implemented");
 	case INST_WRITE32: assert(false && "TODO: WRITE32 is not implemented");
 	case INST_WRITE64: assert(false && "TODO: WRITE64 is not implemented");
