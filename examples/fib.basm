@@ -21,7 +21,7 @@ main:
 
 	; Print the number
 	dup 0
-	native print_i64
+	call dump_u64
 
 	plusi
 	swap 1

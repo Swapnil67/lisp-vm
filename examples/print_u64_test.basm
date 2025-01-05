@@ -1,0 +1,8 @@
+%include "./examples/natives.hasm"
+
+main:
+	push 123456789
+	call dump_u64
+	halt
+
+%entry main

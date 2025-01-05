@@ -1,4 +1,4 @@
-kprint_i64:
+print_i64:
     ;; Extracting input from the BM's stack
     mov rsi, [stack_top]
     sub rsi, BM_WORD_SIZE
