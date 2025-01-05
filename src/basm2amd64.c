@@ -132,7 +132,22 @@ int main(int argc, char *argv[]) {
 	} break;
 
 	case INST_MODI: {
-	    printf("    ;; TODO modi\n");
+	    printf("    ;; modi\n");
+	    // * Get the 2nd argument into 'rbx'
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    // * Get the 1st argument into 'rax'
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    // * 'rdx' register will have remainder
+	    printf("    xor rdx, rdx\n");
+	    printf("    idiv rbx\n");
+	    // * Quotient will be store in 'rax'
+	    printf("    mov [rsi], rdx\n");
+	    // * store quotent to top of stack
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
 	case INST_PLUSF: assert(false && "TODO: PLUSF is not implemented");
