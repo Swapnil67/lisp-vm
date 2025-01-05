@@ -113,7 +113,22 @@ int main(int argc, char *argv[]) {
 	case INST_MULI: assert(false && "TODO: MULI is not implemented");
 	
 	case INST_DIVI: {
-	    printf("    ;; TODO divi\n");
+	    printf("    ;; divi\n");
+	    // * Get the 2nd argument into 'rbx'
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    // * Get the 1st argument into 'rax'
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    // * 'rdx' register will have remainder
+	    printf("    xor rdx, rdx\n");
+	    printf("    idiv rbx\n");
+	    // * Quotient will be store in 'rax'
+	    printf("    mov [rsi], rax\n");
+	    // * store quotent to top of stack
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
 	} break;
 
 	case INST_MODI: {
@@ -252,7 +267,7 @@ int main(int argc, char *argv[]) {
 
     printf("    ret\n");
     printf("segment .data\n");
-    printf("stack_top: dq stackn\n");
+    printf("stack_top: dq stack\n");
     printf("inst_map: dq");
     for(size_t i = 0; i < basm.program_size; ++i) {
 	printf(" inst_%zu,", i);
