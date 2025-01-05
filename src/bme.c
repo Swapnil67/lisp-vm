@@ -29,7 +29,7 @@ static Err bm_alloc(Bm *bm) {
 
 static Err bm_free(Bm *bm) {
     if(bm->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
+        return ERR_STACK_UNDERFLOW;
     }
     // * Top of stack will have pointer
     free(bm->stack[bm->stack_size - 1].as_ptr);
