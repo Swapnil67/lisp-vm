@@ -18,7 +18,6 @@ static void usage(FILE *stream, const char *program) {
     fprintf(stream, "Usage: %s <input.basm> <output.bm>\n", program);
 }
 
-
 int main2(void) {
     String_View str = cstr_as_sv("  Swapnil       Adsul\n  ");
     str = sv_trim(str);
