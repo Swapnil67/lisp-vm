@@ -4,8 +4,14 @@
 
 main:
     push 1
-    push 2
-    push 3
+    	 forever:
+		dup 0
+		push 1
+		plusi
+	jmp forever
+    
+    halt
+    
     plusi
     plusi
     call dump_u64
