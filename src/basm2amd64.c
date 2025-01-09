@@ -156,7 +156,19 @@ int main(int argc, char *argv[]) {
 	case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
 	
 	case INST_RET: {
+	    // * Takes the return addr from the top of stack
 	    printf("    ;; TODO ret\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    // * Copy the ret addr to rax register
+	    printf("    mov rax, [rsi]\n");
+	    // * offset the ret addr to specific inst
+	    printf("    mov rbx, BM_WORD_SIZE\n");
+	    printf("    mul rbx\n");
+	    printf("    add rax, inst_map\n");
+	    printf("    mov [stack_top], rsi\n");
+	    printf("    jmp [rax]\n");
+	    
 	} break;
 	
 	case INST_CALL: {

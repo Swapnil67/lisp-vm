@@ -13,3 +13,7 @@ ld -o ./build/examples/fib.exe ./build/examples/fib.o
 nasm -felf64 -F dwarf -g ./build/examples/123i.asm -o ./build/examples/123i.o
 ld -o ./build/examples/123i.exe ./build/examples/123i.o
 
+./build/bin/basm2amd64 ./examples/ret.basm > ./build/examples/ret.asm
+nasm -felf64 -F dwarf -g ./build/examples/ret.asm -o ./build/examples/ret.o
+ld -o ./build/examples/ret.exe ./build/examples/ret.o
+
