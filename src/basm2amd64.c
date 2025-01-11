@@ -314,6 +314,24 @@ int main(int argc, char *argv[]) {
 	printf(" inst_%zu,", i);
     }
     printf("\n");
+
+    // * Initialized Memory
+    #define ROW_SIZE 10
+    #define ROW_COUNT(size) ((size + ROW_SIZE - 1) / ROW_SIZE)
+    printf("memory: \n");
+    // * since basm.memory is contiguous stream of memory
+    // * print memory in rows of size ROW_SIZE [2D Array]
+    for(int row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
+	printf(" db ");
+	for(int col = 0; col < ROW_SIZE && (row * ROW_SIZE + col) < basm.memory_size; ++col) {
+	    printf(" %u,", basm.memory[row * ROW_SIZE + col]);
+	}
+	printf("\n");
+    }
+    // * Uninitialized Memory
+    printf(" resb %u\n", BM_MEMORY_CAPACITY - basm.memory_size);
+    #undef ROW_SIZE
+    #undef ROW_COUNT
     printf("segment .bss\n");
     printf("stack:	resq BM_STACK_CAPACITY\n");
 
