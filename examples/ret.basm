@@ -12,3 +12,6 @@ main:
     ret
 
 halt
+
+
+;; gdb ./build/examples/ret.exe -x ./tools/x86_64.gdb
