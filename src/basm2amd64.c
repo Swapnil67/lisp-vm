@@ -155,9 +155,21 @@ int main(int argc, char *argv[]) {
 	case INST_MULF: assert(false && "TODO: MULF is not implemented");
 	case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
 	
+	case INST_NATIVE: {
+	    if(inst.operand.as_u64 == 3) {
+		printf("    ;; native print_i64\n");
+		printf("    call print_i64\n");
+	    } else if(inst.operand.as_u64 == 7) {
+		printf("    ;; TODO native write\n");
+	    }
+	    else {
+		assert(false && "Unsupported native functions\n");
+	    }
+	} break;
+
 	case INST_RET: {
 	    // * Takes the return addr from the top of stack
-	    printf("    ;; TODO ret\n");
+	    printf("    ;; ret\n");
 	    printf("    mov rsi, [stack_top]\n");
 	    printf("    sub rsi, BM_WORD_SIZE\n");
 	    // * Copy the ret addr to rax register
@@ -172,19 +184,17 @@ int main(int argc, char *argv[]) {
 	} break;
 	
 	case INST_CALL: {
-	    printf("    ;; TODO call\n");
-	} break;
-	
-	case INST_NATIVE: {
-	    if(inst.operand.as_u64 == 3) {
-		printf("    ;; native print_i64\n");
-		printf("    call print_i64\n");
-	    } else if(inst.operand.as_u64 == 7) {
-		printf("    ;; TODO native write\n");
-	    }
-	    else {
-		assert(false && "Unsupported native functions\n");
-	    }
+	    printf("    ;; call\n");
+	    // * Save the next addr to top of stack
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    mov QWORD [rsi], %zu\n", i + 1);    // * ip + 1
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+
+	    // * jmp to the operand
+	    printf("    mov rdi, inst_map\n");
+	    printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    jmp [rdi]\n");
 	} break;
 
 	case INST_JMP: {

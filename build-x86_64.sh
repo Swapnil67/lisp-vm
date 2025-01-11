@@ -17,3 +17,8 @@ ld -o ./build/examples/123i.exe ./build/examples/123i.o
 nasm -felf64 -F dwarf -g ./build/examples/ret.asm -o ./build/examples/ret.o
 ld -o ./build/examples/ret.exe ./build/examples/ret.o
 
+# call.basm -> call.asm
+./build/bin/basm2amd64 ./examples/call.basm > ./build/examples/call.asm
+nasm -felf64 -F dwarf -g ./build/examples/call.asm -o ./build/examples/call.o
+ld -o ./build/examples/call.exe ./build/examples/call.o
+

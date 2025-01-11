@@ -1,0 +1,21 @@
+%include "./examples/natives.hasm"
+
+%entry main
+
+foo:
+    push 1
+    swap 1
+
+    push 2
+    swap 1
+
+    push 3
+    swap 1
+
+    ret
+
+main:
+    call foo
+halt
+
+;; gdb ./build/examples/call.exe -x ./tools/x86_64.gdb
