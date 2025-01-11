@@ -329,7 +329,7 @@ int main(int argc, char *argv[]) {
 	printf("\n");
     }
     // * Uninitialized Memory
-    printf(" resb %u\n", BM_MEMORY_CAPACITY - basm.memory_size);
+    printf(" times %u db 0\n", BM_MEMORY_CAPACITY - basm.memory_size);
     #undef ROW_SIZE
     #undef ROW_COUNT
     printf("segment .bss\n");
