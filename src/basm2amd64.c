@@ -161,6 +161,21 @@ int main(int argc, char *argv[]) {
 		printf("    call print_i64\n");
 	    } else if(inst.operand.as_u64 == 7) {
 		printf("    ;; TODO native write\n");
+		// * Move 'size' to 'r11' register
+		printf("    MOV r11, [stack_top]\n");
+		printf("    sub r11, BM_WORD_SIZE\n");
+		printf("    mov rdx, r11\n");
+
+		// * offset from the memory
+		printf("    sub r11, BM_WORD_SIZE\n");
+		printf("    mov rsi, [r11]\n");
+		printf("    add rsi, memory\n");
+		
+		// * Set file-descriptor to 'rdi' register
+		printf("    mov rdi, STDOUT\n");
+		printf("    mov rax, SYS_WRITE\n");
+		printf("    mov [stack_top], r11\n");
+		printf("    syscall\n");
 	    }
 	    else {
 		assert(false && "Unsupported native functions\n");
