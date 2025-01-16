@@ -26,3 +26,8 @@ ld -o ./build/examples/call.exe ./build/examples/call.o
 ./build/bin/basm2amd64 ./examples/hello.basm > ./build/examples/hello.asm
 nasm -felf64 -F dwarf -g ./build/examples/hello.asm -o ./build/examples/hello.o
 ld -o ./build/examples/hello.exe ./build/examples/hello.o
+
+# read.basm -> read.asm
+./build/bin/basm2amd64 ./examples/read.basm > ./build/examples/read.asm
+nasm -felf64 -F dwarf -g ./build/examples/read.asm -o ./build/examples/read.o
+ld -o ./build/examples/read.exe ./build/examples/read.o

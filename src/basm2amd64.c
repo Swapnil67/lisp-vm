@@ -295,12 +295,19 @@ int main(int argc, char *argv[]) {
 	case INST_SHL: assert(false && "TODO: SHL is not implemented");
 	case INST_NOTB: assert(false && "TODO: NOTB is not implemented");
 	case INST_READ8: {
-	    printf("    ;; TODO read8\n");
-	    // * move addr of top of stack to rsi pointer
-	    // printf("    mov rsi, [stack_top]\n");
-	    // printf("    sub rsi, BM_WORD_SIZE\n");
-	    // // * Move value of top of stack to rax register
-	    // printf("    mov rax, [rsi]\n");
+	    printf("    ;; read8\n");
+	    // * move addr of top of stack to r11 pointer
+	    printf("    mov r11, [stack_top]\n");
+	    printf("    sub r11, BM_WORD_SIZE\n");
+	    // * Copy the addr from top of stack to rsi register
+	    printf("    mov rsi, [r11]\n");
+	    // * Add the offset from memory
+	    printf("    add rsi, memory\n");
+	    // * Read the BYTE to low 8 bits of rax register
+	    printf("    xor rax, rax\n");
+	    printf("    mov al, BYTE [rsi]\n");
+	    // * Save the value to the top of stack
+	    printf("    mov [r11], rax\n");
 	} break;	
 	case INST_READ16: assert(false && "TODO: READ16 is not implemented");
 	case INST_READ32: assert(false && "TODO: READ32 is not implemented");
