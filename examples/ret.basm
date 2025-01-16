@@ -1,0 +1,17 @@
+%include "./examples/natives.hasm"
+
+%entry main
+
+main:
+    push 1
+    forever:
+	dup 0
+	push 1
+	plusi
+    push forever
+    ret
+
+halt
+
+
+;; gdb ./build/examples/ret.exe -x ./tools/x86_64.gdb

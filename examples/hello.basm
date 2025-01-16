@@ -1,10 +1,22 @@
 %include "./examples/natives.hasm"
 
 %bind hello "Hello, World"
+%bind hello_end ""
 
 %entry main
 
+;; count
+;; hello
 main:
+
+    push hello
+    push hello_end
+    dup 1
+    minusi
+    native write
+    
+    halt
+
     ; Pointer Arithmetics
     push hello
     push 12
@@ -21,3 +33,4 @@ main:
 
     halt
 
+;; gdb ./build/examples/hello.exe -x ./tools/x86_64.gdb

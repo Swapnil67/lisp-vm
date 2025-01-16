@@ -1,0 +1,26 @@
+%include "./examples/natives.hasm"
+
+%bind hello "012"
+
+%entry main
+
+;; count
+;; hello
+main:
+
+    push hello
+    read8
+
+    push hello
+    push 1
+    plusi
+    read8
+
+    push hello
+    push 2
+    plusi
+    read8
+    
+    halt
+
+;; gdb ./build/examples/read.exe -x ./tools/x86_64.gdb

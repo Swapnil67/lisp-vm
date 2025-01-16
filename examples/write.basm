@@ -1,0 +1,27 @@
+%include "./examples/natives.hasm"
+
+%bind start ""
+
+%entry main
+
+main:
+
+    push start
+    push '0'
+    write8
+
+    push start
+    push 1
+    plusi
+    push '1'
+    write8
+
+    push start
+    push 2
+    plusi
+    push '2'
+    write8
+    
+    halt
+
+;; gdb ./build/examples/write.exe -x ./tools/x86_64.gdb

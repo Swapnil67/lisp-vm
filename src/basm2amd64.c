@@ -155,24 +155,61 @@ int main(int argc, char *argv[]) {
 	case INST_MULF: assert(false && "TODO: MULF is not implemented");
 	case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
 	
-	case INST_RET: {
-	    printf("    ;; TODO ret\n");
-	} break;
-	
-	case INST_CALL: {
-	    printf("    ;; TODO call\n");
-	} break;
-	
 	case INST_NATIVE: {
 	    if(inst.operand.as_u64 == 3) {
 		printf("    ;; native print_i64\n");
 		printf("    call print_i64\n");
 	    } else if(inst.operand.as_u64 == 7) {
-		printf("    ;; TODO native write\n");
+		printf("    ;; native write\n");
+		// * Move 'size' to 'rdx' register
+		printf("    MOV r11, [stack_top]\n");
+		printf("    sub r11, BM_WORD_SIZE\n");
+		printf("    mov rdx, [r11]\n");
+
+		// * offset from the memory
+		printf("    sub r11, BM_WORD_SIZE\n");
+		printf("    mov rsi, [r11]\n");
+		printf("    add rsi, memory\n");
+		
+		// * Set file-descriptor to 'rdi' register
+		printf("    mov rdi, STDOUT\n");
+		printf("    mov rax, SYS_WRITE\n");
+		printf("    mov [stack_top], r11\n");
+		printf("    syscall\n");
 	    }
 	    else {
 		assert(false && "Unsupported native functions\n");
 	    }
+	} break;
+
+	case INST_RET: {
+	    // * Takes the return addr from the top of stack
+	    printf("    ;; ret\n");
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    // * Copy the ret addr to rax register
+	    printf("    mov rax, [rsi]\n");
+	    // * offset the ret addr to specific inst
+	    printf("    mov rbx, BM_WORD_SIZE\n");
+	    printf("    mul rbx\n");
+	    printf("    add rax, inst_map\n");
+	    printf("    mov [stack_top], rsi\n");
+	    printf("    jmp [rax]\n");
+	    
+	} break;
+	
+	case INST_CALL: {
+	    printf("    ;; call\n");
+	    // * Save the next addr to top of stack
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    mov QWORD [rsi], %zu\n", i + 1);    // * ip + 1
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+
+	    // * jmp to the operand
+	    printf("    mov rdi, inst_map\n");
+	    printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    jmp [rdi]\n");
 	} break;
 
 	case INST_JMP: {
@@ -258,18 +295,42 @@ int main(int argc, char *argv[]) {
 	case INST_SHL: assert(false && "TODO: SHL is not implemented");
 	case INST_NOTB: assert(false && "TODO: NOTB is not implemented");
 	case INST_READ8: {
-	    printf("    ;; TODO read8\n");
-	    // * move addr of top of stack to rsi pointer
-	    // printf("    mov rsi, [stack_top]\n");
-	    // printf("    sub rsi, BM_WORD_SIZE\n");
-	    // // * Move value of top of stack to rax register
-	    // printf("    mov rax, [rsi]\n");
+	    printf("    ;; read8\n");
+	    // * move addr of tos to r11 pointer
+	    printf("    mov r11, [stack_top]\n");
+	    printf("    sub r11, BM_WORD_SIZE\n");
+	    // * Copy the addr from tos to rsi register
+	    printf("    mov rsi, [r11]\n");
+	    // * Add the offset from memory
+	    printf("    add rsi, memory\n");
+	    // * Read the BYTE to low 8 bits of rax register
+	    printf("    xor rax, rax\n");
+	    printf("    mov al, BYTE [rsi]\n");
+	    // * Save the value to the tos
+	    printf("    mov [r11], rax\n");
 	} break;	
 	case INST_READ16: assert(false && "TODO: READ16 is not implemented");
 	case INST_READ32: assert(false && "TODO: READ32 is not implemented");
 	case INST_READ64: assert(false && "TODO: READ64 is not implemented");
 	case INST_WRITE8: {
-	    printf("    ;; TODO write8\n");
+	    printf("    ;; write8\n");
+	    // * move addr of tos to r11 register
+	    printf("    mov r11, [stack_top]\n");
+	    printf("    sub r11, BM_WORD_SIZE\n");
+	    
+	    // * Get the value which needs to be written in rax register
+	    printf("    mov rax, [r11]\n");
+
+	    // * Copy the addr from top of stack to rsi register & offset memory
+	    printf("    sub r11, BM_WORD_SIZE\n");
+	    printf("    mov rsi, [r11]\n");
+	    printf("    add rsi, memory\n");
+
+	    // * mov rax low bit value to rsi register
+	    printf("    mov BYTE [rsi], al\n");
+
+	    // * Change the tos
+	    printf("    mov [stack_top], r11\n");
 	} break;
 	case INST_WRITE16: assert(false && "TODO: WRITE16 is not implemented");
 	case INST_WRITE32: assert(false && "TODO: WRITE32 is not implemented");
@@ -292,6 +353,24 @@ int main(int argc, char *argv[]) {
 	printf(" inst_%zu,", i);
     }
     printf("\n");
+
+    // * Initialized Memory
+    #define ROW_SIZE 10
+    #define ROW_COUNT(size) ((size + ROW_SIZE - 1) / ROW_SIZE)
+    printf("memory: \n");
+    // * since basm.memory is contiguous stream of memory
+    // * print memory in rows of size ROW_SIZE [2D Array]
+    for(int row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
+	printf(" db ");
+	for(int col = 0; col < ROW_SIZE && (row * ROW_SIZE + col) < basm.memory_size; ++col) {
+	    printf(" %u,", basm.memory[row * ROW_SIZE + col]);
+	}
+	printf("\n");
+    }
+    // * Uninitialized Memory
+    printf(" times %u db 0\n", BM_MEMORY_CAPACITY - basm.memory_size);
+    #undef ROW_SIZE
+    #undef ROW_COUNT
     printf("segment .bss\n");
     printf("stack:	resq BM_STACK_CAPACITY\n");
 
