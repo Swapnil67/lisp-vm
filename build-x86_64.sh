@@ -31,3 +31,8 @@ ld -o ./build/examples/hello.exe ./build/examples/hello.o
 ./build/bin/basm2amd64 ./examples/read.basm > ./build/examples/read.asm
 nasm -felf64 -F dwarf -g ./build/examples/read.asm -o ./build/examples/read.o
 ld -o ./build/examples/read.exe ./build/examples/read.o
+
+# write.basm -> write.asm
+./build/bin/basm2amd64 ./examples/write.basm > ./build/examples/write.asm
+nasm -felf64 -F dwarf -g ./build/examples/write.asm -o ./build/examples/write.o
+ld -o ./build/examples/write.exe ./build/examples/write.o

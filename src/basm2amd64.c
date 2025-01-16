@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
 		printf("    ;; native print_i64\n");
 		printf("    call print_i64\n");
 	    } else if(inst.operand.as_u64 == 7) {
-		printf("    ;; TODO native write\n");
+		printf("    ;; native write\n");
 		// * Move 'size' to 'r11' register
 		printf("    MOV r11, [stack_top]\n");
 		printf("    sub r11, BM_WORD_SIZE\n");
@@ -296,24 +296,41 @@ int main(int argc, char *argv[]) {
 	case INST_NOTB: assert(false && "TODO: NOTB is not implemented");
 	case INST_READ8: {
 	    printf("    ;; read8\n");
-	    // * move addr of top of stack to r11 pointer
+	    // * move addr of tos to r11 pointer
 	    printf("    mov r11, [stack_top]\n");
 	    printf("    sub r11, BM_WORD_SIZE\n");
-	    // * Copy the addr from top of stack to rsi register
+	    // * Copy the addr from tos to rsi register
 	    printf("    mov rsi, [r11]\n");
 	    // * Add the offset from memory
 	    printf("    add rsi, memory\n");
 	    // * Read the BYTE to low 8 bits of rax register
 	    printf("    xor rax, rax\n");
 	    printf("    mov al, BYTE [rsi]\n");
-	    // * Save the value to the top of stack
+	    // * Save the value to the tos
 	    printf("    mov [r11], rax\n");
 	} break;	
 	case INST_READ16: assert(false && "TODO: READ16 is not implemented");
 	case INST_READ32: assert(false && "TODO: READ32 is not implemented");
 	case INST_READ64: assert(false && "TODO: READ64 is not implemented");
 	case INST_WRITE8: {
-	    printf("    ;; TODO write8\n");
+	    printf("    ;; write8\n");
+	    // * move addr of tos to r11 register
+	    printf("    mov r11, [stack_top]\n");
+	    printf("    sub r11, BM_WORD_SIZE\n");
+	    
+	    // * Get the value which needs to be written in rax register
+	    printf("    mov rax, [r11]\n");
+
+	    // * Copy the addr from top of stack to rsi register & offset memory
+	    printf("    sub r11, BM_WORD_SIZE\n");
+	    printf("    mov rsi, [r11]\n");
+	    printf("    add rsi, memory\n");
+
+	    // * mov rax low bit value to rsi register
+	    printf("    mov BYTE [rsi], al\n");
+
+	    // * Change the tos
+	    printf("    mov [stack_top], r11\n");
 	} break;
 	case INST_WRITE16: assert(false && "TODO: WRITE16 is not implemented");
 	case INST_WRITE32: assert(false && "TODO: WRITE32 is not implemented");
