@@ -36,3 +36,9 @@ ld -o ./build/examples/read.exe ./build/examples/read.o
 ./build/bin/basm2amd64 ./examples/write.basm > ./build/examples/write.asm
 nasm -felf64 -F dwarf -g ./build/examples/write.asm -o ./build/examples/write.o
 ld -o ./build/examples/write.exe ./build/examples/write.o
+
+
+# native_write.basm -> native_write.asm
+./build/bin/basm2amd64 ./examples/native_write.basm > ./build/examples/native_write.asm
+nasm -felf64 -F dwarf -g ./build/examples/native_write.asm -o ./build/examples/native_write.o
+ld -o ./build/examples/native_write.exe ./build/examples/native_write.o

@@ -161,10 +161,10 @@ int main(int argc, char *argv[]) {
 		printf("    call print_i64\n");
 	    } else if(inst.operand.as_u64 == 7) {
 		printf("    ;; native write\n");
-		// * Move 'size' to 'r11' register
+		// * Move 'size' to 'rdx' register
 		printf("    MOV r11, [stack_top]\n");
 		printf("    sub r11, BM_WORD_SIZE\n");
-		printf("    mov rdx, r11\n");
+		printf("    mov rdx, [r11]\n");
 
 		// * offset from the memory
 		printf("    sub r11, BM_WORD_SIZE\n");
