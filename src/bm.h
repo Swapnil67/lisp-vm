@@ -244,7 +244,6 @@ typedef struct {
     size_t memory_capacity;
 
     char arena[BASM_ARENA_CAPACITY];
-    
     Arena arena_size;
 
     size_t include_level;
