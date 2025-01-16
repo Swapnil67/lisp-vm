@@ -1,0 +1,14 @@
+%include "./examples/natives.hasm"
+
+%bind hello "123456"
+%entry main
+
+main:
+    push hello
+    push 4
+
+    native write
+    halt
+
+;; run with gdb
+;; gdb ./build/examples/native_write.exe -x ./tools/x86_64.gdb

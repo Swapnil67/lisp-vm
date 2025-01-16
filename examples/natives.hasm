@@ -16,7 +16,6 @@
 ;; addr_b
 swap8:
 	swap 2
-
 	dup 1
 	dup 1
 
@@ -26,7 +25,6 @@ swap8:
 
 	dup 2
 	swap 1
-	
 	write8        ;; Write 'a' to addr_b
 	
 	dup 2
@@ -110,6 +108,7 @@ dump_u64:
      push print_memory
 
 dump_u64_loop:
+     ;; n = (n % 10) + '0'
      dup 1
      push 10
      modi
@@ -125,10 +124,12 @@ dump_u64_loop:
      push 1
      plusi
 
-     ;; Get back to original state
+     ;; n = n / 10
      swap 1
      push 10
      divi
+
+     ;; Get back to original state
      swap 1
 
      ;; Check equal to zero
@@ -142,17 +143,17 @@ dump_u64_after_loop:
 
      ;; Stack Till here
      ;; print_memory + n
-     ;; 0
+     ;; 0 => num
      ;; ret
 
      ;; For number of digits  (count)
-     ;; print_memory + n - print_memory = n
+     ;; (print_memory + n) - print_memory = n
      push print_memory
      minusi
 
      ;; Stack Till here
-     ;; n
-     ;; 0
+     ;; n => count
+     ;; 0 => num
      ;; ret
      
      push print_memory
@@ -170,8 +171,10 @@ dump_u64_after_loop:
 
      native write
 
+     ;; drop the n
      drop
 
+     ;; print new line
      push 0
      push 10
      write8

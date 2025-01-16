@@ -1256,7 +1256,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
 	}
 	*output = word_u64((uint64_t)sv.data[1]);
 	return true;
-    } else if(sv.count > 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
+    } else if(sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
 	// * Encounter String
 	sv.data += 1;
 	sv.count -= 2;
