@@ -113,7 +113,7 @@ print_positive_loop:
      ;; n = (n % 10) + '0'
      dup 1
      push 10
-     modi
+     modu
      push '0'
      plusi
 
@@ -129,7 +129,7 @@ print_positive_loop:
      ;; n = n / 10
      swap 1
      push 10
-     divi
+     divu
 
      ;; Get back to original state
      swap 1
@@ -137,7 +137,7 @@ print_positive_loop:
      ;; Check equal to zero
      dup 1
      push 0
-     eqi
+     equ
      not
      jmp_if print_positive_loop
 
