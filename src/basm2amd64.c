@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 	
 	// * Unsigned Division
 	case INST_DIVU: {
-	    printf("    ;; divi\n");
+	    printf("    ;; divu\n");
 	    // * Get the 2nd argument into 'rbx'
 	    printf("    mov rsi, [stack_top]\n");
 	    printf("    sub rsi, BM_WORD_SIZE\n");
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
 	
 	// * Unsigned Modulus
 	case INST_MODU: {
-	    printf("    ;; modi\n");
+	    printf("    ;; modu\n");
 	    // * Get the 2nd argument into 'rbx'
 	    printf("    mov rsi, [stack_top]\n");
 	    printf("    sub rsi, BM_WORD_SIZE\n");
