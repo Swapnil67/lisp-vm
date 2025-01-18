@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
 	
 	// * Unsigned Division
 	case INST_DIVU: {
-	    printf("    ;; divi\n");
+	    printf("    ;; divu\n");
 	    // * Get the 2nd argument into 'rbx'
 	    printf("    mov rsi, [stack_top]\n");
 	    printf("    sub rsi, BM_WORD_SIZE\n");
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
 	
 	// * Unsigned Modulus
 	case INST_MODU: {
-	    printf("    ;; modi\n");
+	    printf("    ;; modu\n");
 	    // * Get the 2nd argument into 'rbx'
 	    printf("    mov rsi, [stack_top]\n");
 	    printf("    sub rsi, BM_WORD_SIZE\n");
@@ -322,6 +322,23 @@ int main(int argc, char *argv[]) {
 	} break;
 	case INST_LTI: assert(false && "TODO: LTI is not implemented");
 	case INST_NEI: assert(false && "TODO: NEI is not implemented");
+
+	// * Unsigned Comparisions
+	case INST_EQU: {
+	    printf("    ;; TODO equ\n");
+	} break;
+	
+	case INST_GEU: assert(false && "TODO: GEU is not implemented");
+	case INST_GTU: {
+	    printf("    ;; TODO gtu\n");
+	} break;
+	case INST_LEU: {
+	    printf("    ;; TODO leu\n");
+	} break;
+	case INST_LTU: assert(false && "TODO: LTU is not implemented");
+	case INST_NEU: assert(false && "TODO: NEU is not implemented");
+
+	// * Floating Comparisions
 	case INST_EQF: assert(false && "TODO: EQF is not implemented");
 	case INST_GEF: assert(false && "TODO: GEF is not implemented");
 	case INST_GTF: assert(false && "TODO: GTF is not implemented");
@@ -411,9 +428,9 @@ int main(int argc, char *argv[]) {
     printf("memory: \n");
     // * since basm.memory is contiguous stream of memory
     // * print memory in rows of size ROW_SIZE [2D Array]
-    for(int row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
+    for(size_t row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
 	printf(" db ");
-	for(int col = 0; col < ROW_SIZE && (row * ROW_SIZE + col) < basm.memory_size; ++col) {
+	for(size_t col = 0; col < ROW_SIZE && (row * ROW_SIZE + col) < basm.memory_size; ++col) {
 	    printf(" %u,", basm.memory[row * ROW_SIZE + col]);
 	}
 	printf("\n");
