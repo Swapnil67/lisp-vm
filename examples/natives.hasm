@@ -197,7 +197,7 @@ dump_i64:
 
 	;; Negate the number
 	push -1
-	muli    
+	multi    
 
     dump_i64_skip_negation:
     
