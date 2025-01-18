@@ -110,7 +110,9 @@ int main(int argc, char *argv[]) {
 	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
-	case INST_MULI: assert(false && "TODO: MULI is not implemented");
+	case INST_MULI: {
+	    printf("    ;; TODO muli\n");
+	} break;
 	
 	case INST_DIVI: {
 	    printf("    ;; divi\n");
@@ -267,8 +269,12 @@ int main(int argc, char *argv[]) {
 	} break;
 	
 	case INST_GEI: assert(false && "TODO: GEI is not implemented");
-	case INST_GTI: assert(false && "TODO: GTI is not implemented");
-	case INST_LEI: assert(false && "TODO: LEI is not implemented");
+	case INST_GTI: {
+	    printf("    ;; TODO gti\n");
+	} break;
+	case INST_LEI: {
+	    printf("    ;; TODO lei\n");
+	} break;
 	case INST_LTI: assert(false && "TODO: LTI is not implemented");
 	case INST_NEI: assert(false && "TODO: NEI is not implemented");
 	case INST_EQF: assert(false && "TODO: EQF is not implemented");
@@ -368,7 +374,7 @@ int main(int argc, char *argv[]) {
 	printf("\n");
     }
     // * Uninitialized Memory
-    printf(" times %u db 0\n", BM_MEMORY_CAPACITY - basm.memory_size);
+    printf(" times %lu db 0\n", BM_MEMORY_CAPACITY - basm.memory_size);
     #undef ROW_SIZE
     #undef ROW_COUNT
     printf("segment .bss\n");
