@@ -110,7 +110,13 @@ int main(int argc, char *argv[]) {
 	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
-	case INST_MULI: assert(false && "TODO: MULI is not implemented");
+	case INST_MULTI: {
+	    printf("    ;; TODO multi\n");
+	} break;
+
+	case INST_MULTU: {
+	    printf("    ;; TODO multu\n");
+	} break;
 	
 	case INST_DIVI: {
 	    printf("    ;; divi\n");
@@ -148,8 +154,49 @@ int main(int argc, char *argv[]) {
 	    // * store quotent to top of stack
 	    printf("    add rsi, BM_WORD_SIZE\n");
 	    printf("    mov [stack_top], rsi\n");
+	} break;	
+	
+	// * Unsigned Division
+	case INST_DIVU: {
+	    printf("    ;; divi\n");
+	    // * Get the 2nd argument into 'rbx'
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    // * Get the 1st argument into 'rax'
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    // * 'rdx' register will have remainder
+	    printf("    xor rdx, rdx\n");
+	    printf("    div rbx\n");
+	    // * Quotient will be store in 'rax'
+	    printf("    mov [rsi], rax\n");
+	    // * store quotent to top of stack
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
+	// * Unsigned Modulus
+	case INST_MODU: {
+	    printf("    ;; modi\n");
+	    // * Get the 2nd argument into 'rbx'
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    // * Get the 1st argument into 'rax'
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    // * 'rdx' register will have remainder
+	    printf("    xor rdx, rdx\n");
+	    printf("    div rbx\n");
+	    // * Quotient will be store in 'rax'
+	    printf("    mov [rsi], rdx\n");
+	    // * store quotent to top of stack
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;	
+
+
 	case INST_PLUSF: assert(false && "TODO: PLUSF is not implemented");
 	case INST_MINUSF: assert(false && "TODO: MINUSF is not implemented");
 	case INST_MULF: assert(false && "TODO: MULF is not implemented");
@@ -267,8 +314,12 @@ int main(int argc, char *argv[]) {
 	} break;
 	
 	case INST_GEI: assert(false && "TODO: GEI is not implemented");
-	case INST_GTI: assert(false && "TODO: GTI is not implemented");
-	case INST_LEI: assert(false && "TODO: LEI is not implemented");
+	case INST_GTI: {
+	    printf("    ;; TODO gti\n");
+	} break;
+	case INST_LEI: {
+	    printf("    ;; TODO lei\n");
+	} break;
 	case INST_LTI: assert(false && "TODO: LTI is not implemented");
 	case INST_NEI: assert(false && "TODO: NEI is not implemented");
 	case INST_EQF: assert(false && "TODO: EQF is not implemented");
@@ -368,7 +419,7 @@ int main(int argc, char *argv[]) {
 	printf("\n");
     }
     // * Uninitialized Memory
-    printf(" times %u db 0\n", BM_MEMORY_CAPACITY - basm.memory_size);
+    printf(" times %lu db 0\n", BM_MEMORY_CAPACITY - basm.memory_size);
     #undef ROW_SIZE
     #undef ROW_COUNT
     printf("segment .bss\n");
