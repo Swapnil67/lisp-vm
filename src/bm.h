@@ -57,10 +57,14 @@ typedef enum {
     
     INST_PLUSI,
     INST_MINUSI,
-    INST_MULI,
+    INST_MULTI,
     INST_DIVI,
     INST_MODI,
-
+    INST_MULTU,
+    INST_DIVU,
+    INST_MODU,
+    
+    
     INST_PLUSF,
     INST_MINUSF,
     INST_MULF,
@@ -184,15 +188,6 @@ struct Bm {
 
     int halt;
 };
-
-#define MAKE_INST_PUSH(value)	{ .type = INST_PUSH, .operand = value }
-#define MAKE_INST_DUP(addr)	{ .type = INST_DUP, .operand = addr }
-#define MAKE_INST_MULI()	{ .type = INST_MULI }
-#define MAKE_INST_DIVI()	{ .type = INST_DIVI }
-#define MAKE_INST_PLUSI		{ .type = INST_PLUSI }
-#define MAKE_INST_MINUSI()	{ .type = INST_MINUSI }
-#define MAKE_INST_JMP(addr)	{ .type = INST_JMP, .operand = addr }
-#define MAKE_INST_HALT		{ .type = INST_HALT }
 
 Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
@@ -319,9 +314,13 @@ const char *inst_type_as_cstr(Inst_Type type) {
     case INST_PLUSI:	return "INST_PLUSI";
     case INST_MINUSI:	return "INST_MINUSI";
     case INST_DIVI:	return "INST_DIVI";
-    case INST_MULI:	return "INST_MULI";
+    case INST_MULTI:	return "INST_MULTI";
     case INST_MODI:	return "INST_MODI";    
 
+    case INST_DIVU:	return "INST_DIVU";
+    case INST_MULTU:	return "INST_MULTU";
+    case INST_MODU:	return "INST_MODU";
+    
     case INST_PLUSF:	return "INST_PLUSF";
     case INST_MINUSF:	return "INST_MINUSF";
     case INST_DIVF:	return "INST_DIVF";
@@ -398,9 +397,12 @@ const char *inst_name(Inst_Type type) {
     
     case INST_PLUSI:	return "plusi";
     case INST_MINUSI:	return "minusi";
-    case INST_MULI:	return "muli";
+    case INST_MULTI:	return "multi";
     case INST_DIVI:	return "divi";
     case INST_MODI:	return "modi";
+    case INST_MULTU:	return "multu";
+    case INST_DIVU:	return "divu";
+    case INST_MODU:	return "modu";
     
     case INST_PLUSF:	return "plusf";
     case INST_MINUSF:	return "minusf";
@@ -467,9 +469,12 @@ int inst_has_operand(Inst_Type type) {
     
     case INST_PLUSI:	return false;
     case INST_MINUSI:	return false;
-    case INST_MULI:	return false;
+    case INST_MULTI:	return false;
     case INST_DIVI:	return false;
     case INST_MODI:	return false;
+    case INST_MULTU:	return false;
+    case INST_DIVU:	return false;
+    case INST_MODU:	return false;
     
     case INST_PLUSF:	return false;
     case INST_MINUSF:	return false;
@@ -632,25 +637,49 @@ Err bm_execute_inst(Bm *bm) {
     case INST_MINUSI:
 	BINARY_OP(bm, u64, u64, -);
 	break;
+	
+    // * Signed Multiplication	
+    case INST_MULTI:
+	BINARY_OP(bm, i64, i64, *);
+	break;
 
-    case INST_MULI:
+    // * Unsigned Multiplication	
+    case INST_MULTU:
 	BINARY_OP(bm, u64, u64, *);
 	break;
 
+    // * Signed Division	
     case INST_DIVI: {
+	if(bm->stack[bm->stack_size - 1].as_i64 == 0) {
+	    return ERR_DIV_BY_ZERO;
+	}
+	BINARY_OP(bm, i64, i64, /);
+    } break;
+
+    // * Unsigned Division
+    case INST_DIVU: {
 	if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
 	    return ERR_DIV_BY_ZERO;
 	}
 	BINARY_OP(bm, u64, u64, /);
     } break;
 
+    // * Signed Modulus
     case INST_MODI: {
+	if(bm->stack[bm->stack_size - 1].as_i64 == 0) {
+	    return ERR_DIV_BY_ZERO;
+	}
+	BINARY_OP(bm, i64, i64, %);
+    } break;
+
+    // * Unsigned Modulus
+    case INST_MODU: {
 	if(bm->stack[bm->stack_size - 1].as_u64 == 0) {
 	    return ERR_DIV_BY_ZERO;
 	}
 	BINARY_OP(bm, u64, u64, %);
     } break;
-
+    
     case INST_PLUSF:
 	BINARY_OP(bm, f64, f64, +);
 	break;

@@ -110,8 +110,12 @@ int main(int argc, char *argv[]) {
 	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
-	case INST_MULI: {
-	    printf("    ;; TODO muli\n");
+	case INST_MULTI: {
+	    printf("    ;; TODO multi\n");
+	} break;
+
+	case INST_MULTU: {
+	    printf("    ;; TODO multu\n");
 	} break;
 	
 	case INST_DIVI: {
@@ -150,8 +154,49 @@ int main(int argc, char *argv[]) {
 	    // * store quotent to top of stack
 	    printf("    add rsi, BM_WORD_SIZE\n");
 	    printf("    mov [stack_top], rsi\n");
+	} break;	
+	
+	// * Unsigned Division
+	case INST_DIVU: {
+	    printf("    ;; divi\n");
+	    // * Get the 2nd argument into 'rbx'
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    // * Get the 1st argument into 'rax'
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    // * 'rdx' register will have remainder
+	    printf("    xor rdx, rdx\n");
+	    printf("    div rbx\n");
+	    // * Quotient will be store in 'rax'
+	    printf("    mov [rsi], rax\n");
+	    // * store quotent to top of stack
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
 	} break;
 	
+	// * Unsigned Modulus
+	case INST_MODU: {
+	    printf("    ;; modi\n");
+	    // * Get the 2nd argument into 'rbx'
+	    printf("    mov rsi, [stack_top]\n");
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rbx, [rsi]\n");
+	    // * Get the 1st argument into 'rax'
+	    printf("    sub rsi, BM_WORD_SIZE\n");
+	    printf("    mov rax, [rsi]\n");
+	    // * 'rdx' register will have remainder
+	    printf("    xor rdx, rdx\n");
+	    printf("    div rbx\n");
+	    // * Quotient will be store in 'rax'
+	    printf("    mov [rsi], rdx\n");
+	    // * store quotent to top of stack
+	    printf("    add rsi, BM_WORD_SIZE\n");
+	    printf("    mov [stack_top], rsi\n");
+	} break;	
+
+
 	case INST_PLUSF: assert(false && "TODO: PLUSF is not implemented");
 	case INST_MINUSF: assert(false && "TODO: MINUSF is not implemented");
 	case INST_MULF: assert(false && "TODO: MULF is not implemented");
