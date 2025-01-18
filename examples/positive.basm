@@ -1,9 +1,8 @@
 %include "./examples/natives.hasm"
 
 main:
-	push 10
-	call dump_u64
-
+	push -10
+	call dump_i64
 	halt
 
 %entry main

@@ -176,6 +176,43 @@ print_positive_loop:
      ret
 
 
+;; Initial Stack
+;; ret
+;; num
+dump_i64:
+    swap 1
+    dup 0
+    push 0
+    gti
+    jmp_if dump_i64_skip_negation
+
+    	;; Print the '-' sign for negative number
+    	push print_memory
+	push  '-'
+	write8
+
+	push print_memory
+	push 1
+	call write
+
+	;; Negate the number
+	push -1
+	muli    
+
+    dump_i64_skip_negation:
+    
+    call print_positive
+
+    ;; print new line
+    push print_memory
+    push 10
+    write8
+    push print_memory
+    push 1
+    native write
+
+   ret
+    
 
 ;; Initial Stack
 ;; ret
@@ -189,7 +226,6 @@ dump_u64:
      push print_memory
      push 10
      write8
-
      push print_memory
      push 1
      native write
