@@ -1399,38 +1399,69 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 	       token.count -= 1;
 	       token.data += 1;
 	       
-	       if(sv_eq(token, cstr_as_sv("bind"))) {
+	       if(sv_eq(token, cstr_as_sv("const"))) {
 		   line = sv_trim(line);
-		   // printf("Line: #%.*s#\n", (int) line.count, line.data);
+		   // printf("Line: #%.*s#\n", SV_Arg(line));
 		   
 		   String_View name = sv_chop_by_delim(&line, ' ');
-		   // printf("Name: #%.*s#\n", (int) name.count, name.data);
+		   // printf("Name: %"SV_Fmt"\n", SV_Arg(name));
 		   
-		   if(name.count > 0) {
-		       line = sv_trim(line);
-		       String_View value = line;
-		       // printf("Value: #%.*s#\n", (int) value.count, value.data);
-		       
-		       Word word = {0};
-		       if(!basm_translate_literal(basm, value, &word)) {
-			   fprintf(stderr, "%"SV_Fmt":%d: ERROR: `%"SV_Fmt"` is not a number\n",
-			   SV_Arg(input_file_path), line_number, SV_Arg(value));
-			   exit(1);
-		       }
-		       
-		       // * Check if name already bind to some other instructions
-		       if(!basm_bind_value(basm, name, word)) {
-			   fprintf(stderr, "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound\n",
-			   SV_Arg(input_file_path), line_number, SV_Arg(name));
-			   exit(1);
-		       }
-		   }
-		   else {
+		   if(name.count <= 0) {
 		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: binding name is not provided\n",
 		       SV_Arg(input_file_path), line_number);
 		       exit(1);
 		   }
-	       } else if(sv_eq(token, cstr_as_sv("include"))) {
+		   
+		   line = sv_trim(line);
+		   String_View value = line;
+		   // printf("Value: %"SV_Fmt"\n", SV_Arg(value));
+		   
+		   Word word = {0};
+		   if(!basm_translate_literal(basm, value, &word)) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: `%"SV_Fmt"` is not a number\n",
+		       SV_Arg(input_file_path), line_number, SV_Arg(value));
+		       exit(1);
+		   }
+
+		   // * Check if name already bind to some other instructions
+		   if(!basm_bind_value(basm, name, word)) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound\n",
+		       SV_Arg(input_file_path), line_number, SV_Arg(name));
+		       exit(1);
+		   }
+
+	       }
+	       else if(sv_eq(token, cstr_as_sv("native"))) {
+		   line = sv_trim(line);
+		   String_View name = sv_chop_by_delim(&line, ' ');
+		   if(name.count <= 0) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: native function name is not provided\n",
+		       SV_Arg(input_file_path), line_number);
+		       exit(1);		       
+		   }
+
+		   line = sv_trim(line);
+		   String_View value = line;
+		   // printf("Value: %"SV_Fmt"\n", SV_Arg(value));
+
+		   // Translate this value as u64 integer
+		   Word word = {0};
+		   if(!basm_translate_literal(basm, value, &word)) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: `%"SV_Fmt"` is not a number\n",
+		       SV_Arg(input_file_path), line_number, SV_Arg(value));
+		       exit(1);
+		   }
+		   // printf("%"PRIu64"\n", word.as_u64);
+
+		   // * Check if this native function name to bind to any other value
+		   if(!basm_bind_value(basm, name, word)) {
+		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: Native function name `%"SV_Fmt"` is already bound\n",
+		       SV_Arg(input_file_path), line_number, SV_Arg(name));		       
+		       exit(1);
+		   }
+		   
+	       }
+	       else if(sv_eq(token, cstr_as_sv("include"))) {
 		   
 		   line = sv_trim(line);
 		   if(line.count > 0) {
@@ -1481,6 +1512,11 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       basm->entry = entry.as_u64;
 		   }
 		   basm->has_entry = true;
+	       } else if(sv_eq(token, cstr_as_sv("bind"))) {
+		   fprintf(stderr, "%.*s:%d: ERROR: %%bind directive has been removed! Use %%const directive to define consts. Use %%native directive to define native functions. `%.*s`\n",
+		   SV_Arg(input_file_path), line_number, SV_Arg(token));
+		   exit(1);		   
+	    
 	       }
 	       else {
 		   fprintf(stderr, "%.*s:%d: ERROR: unknown pre-processor directive `%.*s`\n",
@@ -1519,7 +1555,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       
 		       if(inst_has_operand(inst_type)) {
 			   if(operand.count == 0) {
-			       fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
+			       // fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
 			       SV_Arg(input_file_path), line_number,
 			       (int) token.count, token.data);
 			       exit(1);
@@ -1529,7 +1565,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 			       basm,
 			       operand,
 			       &basm->program[basm->program_size].operand)) {
-				   // fprintf(stdout, "Operand = %"SV_Fmt" at %"PRIu64"\n", SV_Arg(operand), basm->program_size);
+				   fprintf(stdout, "Operand = %"SV_Fmt" at %"PRIu64"\n", SV_Arg(operand), basm->program_size);
 				   // * or parse operand as name
 				   basm_push_defered_operand(basm, basm->program_size, operand);
 			   }
