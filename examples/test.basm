@@ -1,12 +1,11 @@
-;; %include "./examples/natives.hasm"
+%include "./examples/natives.hasm"
 %entry main
 
-do_some:
-	ret
-
 main:
-	;; push 67
-	;; native alloc
-	push 1
-	jmp do_some
+	push 10
+	push 0
+	push -10
+	call dump_i64
+	call dump_i64
+	call dump_i64
 	halt

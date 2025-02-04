@@ -5,7 +5,7 @@
 main:
 	push 3.1415
 	f2i
-	native print_i64
+	call dump_i64
 
 	push 3.1415
 	f2u
@@ -13,7 +13,7 @@ main:
 
 	push -3.1415
 	f2i
-	native print_i64
+	call dump_i64
 
 	push 10
 	i2f
@@ -24,3 +24,6 @@ main:
 	native print_f64
 
 	halt
+
+
+;; ./build/bin/bme -i ./build/examples/cast.bm  

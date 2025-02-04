@@ -19,7 +19,7 @@ static void usage(FILE *stream, const char *program) {
 
 int main(int argc, char **argv) {
 
-    int have_symbol_table = 0;
+    // int have_symbol_table = 0;
     const char *program = shift(&argc, &argv);
     if(argc == 0) {
 	usage(stderr, program);
