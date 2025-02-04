@@ -39,7 +39,7 @@ swap8:
 
 ;; Initial Stack
 ;; ret
-;; n			;; (count)
+;; n			          ;; (count)
 ;; print_memory		;; (base)
 reverse:
 	swap 2
@@ -71,7 +71,7 @@ reverse:
 
 	    ;; Stack Till Here
 	    ;; count / 2
-            ;; count
+         ;; count
 	    ;; base
 	    ;; ret
 
