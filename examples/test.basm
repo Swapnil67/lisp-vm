@@ -3,5 +3,9 @@
 
 main:
 	push 10
+	push 0
+	push -10
+	call dump_i64
+	call dump_i64
 	call dump_i64
 	halt
