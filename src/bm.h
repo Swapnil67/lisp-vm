@@ -1555,7 +1555,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       
 		       if(inst_has_operand(inst_type)) {
 			   if(operand.count == 0) {
-			       // fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
+			       fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
 			       SV_Arg(input_file_path), line_number,
 			       (int) token.count, token.data);
 			       exit(1);
