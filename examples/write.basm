@@ -1,6 +1,6 @@
 %include "./examples/natives.hasm"
 
-%bind start ""
+%const start ""
 
 %entry main
 
