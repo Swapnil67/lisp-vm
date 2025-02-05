@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-%bind N 10.0
+%const N 10.0
 %entry main
 
 ; a + (b - a) * t

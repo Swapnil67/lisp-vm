@@ -3,7 +3,6 @@
 
 // * Convert BASM Assembly To BASM vm executable
 
-int main2(void);
 int main(int argc, char **argv);
 
 static char *shift(int *argc, char ***argv) {
@@ -16,17 +15,6 @@ static char *shift(int *argc, char ***argv) {
 
 static void usage(FILE *stream, const char *program) {
     fprintf(stream, "Usage: %s <input.basm> <output.bm>\n", program);
-}
-
-int main2(void) {
-    String_View str = cstr_as_sv("  Swapnil       Adsul\n  ");
-    str = sv_trim(str);
-    String_View sv = sv_chop_by_delim(&str, ' ');
-    printf("%.*s\n", (int) sv.count, sv.data);
-    // int ans = sv_eq(str, cstr_as_sv("Swapnil Adsul\n"));
-    // printf("%s\n", str.data);
-    // printf("%s\n", sv_trim(str).data);    
-    return 0;
 }
 
 int main(int argc, char **argv) {

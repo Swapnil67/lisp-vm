@@ -2,7 +2,7 @@
 
 %entry main
 
-%bind N 30
+%const N 30
 
 main:
 	push 0		; i

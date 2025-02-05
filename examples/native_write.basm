@@ -1,6 +1,6 @@
 %include "./examples/natives.hasm"
 
-%bind hello "123456"
+%const hello "123456"
 %entry main
 
 main:
