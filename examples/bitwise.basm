@@ -6,21 +6,21 @@ main:
 	push 5
 	push 9
 	andb
-	native dump_u64
+	call dump_u64
 
 	push 5
 	push 9
 	orb
-	native dump_u64
+	call dump_u64
 
 	push 5
 	push 9
 	xor
-	native dump_u64
+	call dump_u64
 
 	push 5
 	notb
-	native dump_u64
+	call dump_u64
 
 halt
 	

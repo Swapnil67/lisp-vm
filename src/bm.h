@@ -219,9 +219,18 @@ PACK(struct Bm_File_Meta {
 
 typedef struct Bm_File_Meta Bm_File_Meta;
 
+typedef enum {
+    BINDING_CONST = 0,
+    BINDING_LABEL,
+    BINDING_NATIVE
+} Binding_Kind;
+
+const char* binding_kind_as_cstr(Binding_Kind kind);
+
 typedef struct {
-    String_View name;
     Word value;
+    Binding_Kind kind;
+    String_View name;
 } Binding;
 
 // * Location of all the jumps that have unresolved names
@@ -249,7 +258,6 @@ typedef struct {
     size_t memory_capacity;
 
     char arena[BASM_ARENA_CAPACITY];
-    
     Arena arena_size;
 
     size_t include_level;
@@ -260,7 +268,7 @@ void* arena_sv_to_cstr(Basm *basm, String_View sv);
 void *basm_alloc(Basm *basm, size_t size);
 String_View basm_slurp_file(Basm *basm, String_View file_path);
 int basm_resolve_binding(Basm *basm, String_View name, Word *output);
-int basm_bind_value(Basm *basm, String_View name, Word word);
+int basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind);
 void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name);
 void print_unresolved_names(const Basm *basm);
 void print_names(const Basm *basm);
@@ -1226,10 +1234,37 @@ void *basm_alloc(Basm *basm, size_t size) {
     return result;
 }
 
+const char* binding_kind_as_cstr(Binding_Kind kind) {
+    switch(kind) {
+    case BINDING_LABEL:		return "label";
+    case BINDING_NATIVE:	return "native";
+    case BINDING_CONST:		return "const";
+    default:
+	assert(false && "Binding_Kind unreachable\n");
+    }
+    
+}
+
+bool validate_bindings(Basm *basm, String_View operand, const char* kind) {
+    // * Loop over the basm bindings
+    for(size_t i = 0; i < basm->bindings_size; ++i) {
+	// * Check for all operands 
+	if(sv_eq(basm->bindings[i].name, operand)) {
+	    String_View kind_sv = cstr_as_sv(binding_kind_as_cstr(basm->bindings[i].kind));
+	    //printf("Kind: %"SV_Fmt"\n", SV_Arg(kind_sv));
+	    if(!sv_eq(kind_sv, cstr_as_sv(kind))) {
+		return false;
+	    }
+	}					  
+    }
+    return true;
+}
+
 // * Finds the address to which given name is bind to 
 int basm_resolve_binding(Basm *basm, String_View name, Word *output) {
     for (size_t i = 0; i < basm->bindings_size; ++i) {
         if (sv_eq(basm->bindings[i].name, name)) {
+	    // printf("Name: %"SV_Fmt"\n", SV_Arg(name));
  	    *output = basm->bindings[i].value;
 	    return 1;
         }
@@ -1237,7 +1272,7 @@ int basm_resolve_binding(Basm *basm, String_View name, Word *output) {
     return 0;
 }
 
-int basm_bind_value(Basm *basm, String_View name, Word value) {
+int basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind) {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
     // * Check if name already bind
@@ -1247,14 +1282,19 @@ int basm_bind_value(Basm *basm, String_View name, Word value) {
     }
 
     // printf("Name: %s\n", name.data);
-    // printf("%lf\n", word.as_f64);
+    // printf("%lf\n", value.as_f64);
     
-    basm->bindings[basm->bindings_size++] = (Binding) {.name = name, .value = value};
+    basm->bindings[basm->bindings_size++] = (Binding) {
+	.name = name,
+	.value = value,
+	.kind = kind
+    };
     return 1;
 }
 
 void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name) {
     assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
+    // printf("Name: %"SV_Fmt"\n\n", SV_Arg(name));
     basm->defered_operands[basm->defered_operands_size++] = (Defered_Operand) {
         .addr = addr,
         .name = name
@@ -1425,7 +1465,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		   }
 
 		   // * Check if name already bind to some other instructions
-		   if(!basm_bind_value(basm, name, word)) {
+		   if(!basm_bind_value(basm, name, word, BINDING_CONST)) {
 		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound\n",
 		       SV_Arg(input_file_path), line_number, SV_Arg(name));
 		       exit(1);
@@ -1455,7 +1495,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		   // printf("%"PRIu64"\n", word.as_u64);
 
 		   // * Check if this native function name to bind to any other value
-		   if(!basm_bind_value(basm, name, word)) {
+		   if(!basm_bind_value(basm, name, word, BINDING_NATIVE)) {
 		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: Native function name `%"SV_Fmt"` is already bound\n",
 		       SV_Arg(input_file_path), line_number, SV_Arg(name));		       
 		       exit(1);
@@ -1495,7 +1535,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       SV_Arg(input_file_path), line_number);
 		       exit(1);
 		   }
-	       } else if(sv_eq(token, cstr_as_sv("entry"))) {
+	       }
+	       else if(sv_eq(token, cstr_as_sv("entry"))) {
 		   if(basm->has_entry) {
 		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: entry point has been already set!\n", SV_Arg(input_file_path), line_number);
 		   }
@@ -1509,11 +1550,18 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		   Word entry = {0};
 		   if(!basm_translate_literal(basm, line, &entry)) {
 		       basm->deferred_entry_binding_name = line;
+		       // * ------ Validate Entry point binding
+		       if(!validate_bindings(basm, line, "label")) {
+			   fprintf(stderr, "%"SV_Fmt":%d: ERROR: Invalid entry point. Entry point has to be a label.\n",
+			   SV_Arg(input_file_path), line_number);
+			   exit(1);
+		       }
 		   } else {
 		       basm->entry = entry.as_u64;
 		   }
 		   basm->has_entry = true;
-	       } else if(sv_eq(token, cstr_as_sv("bind"))) {
+	       }
+	       else if(sv_eq(token, cstr_as_sv("bind"))) {
 		   fprintf(stderr, "%.*s:%d: ERROR: %%bind directive has been removed! Use %%const directive to define consts. Use %%native directive to define native functions. `%.*s`\n",
 		   SV_Arg(input_file_path), line_number, SV_Arg(token));
 		   exit(1);		   
@@ -1535,7 +1583,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		   
 		   // fprintf(stdout, "Name: %"SV_Fmt", Address: %"PRIu64"\n", SV_Arg(name), basm->program_size);
 
-		   if(!basm_bind_value(basm, name, word_u64(basm->program_size))) {
+		   if(!basm_bind_value(basm, name, word_u64(basm->program_size), BINDING_LABEL)) {
 		       fprintf(stderr, "%"SV_Fmt":%d: ERROR: binding `%"SV_Fmt"` is already defined\n",
 		       SV_Arg(input_file_path), line_number, SV_Arg(name));
 		       exit(1);		       
@@ -1556,7 +1604,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       
 		       if(inst_has_operand(inst_type)) {
 			   if(operand.count == 0) {
-			       // fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
+			       fprintf(stderr, "%.*s:%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
 			       SV_Arg(input_file_path), line_number,
 			       (int) token.count, token.data);
 			       exit(1);
@@ -1566,8 +1614,25 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 			       basm,
 			       operand,
 			       &basm->program[basm->program_size].operand)) {
-				   fprintf(stdout, "Operand = %"SV_Fmt" at %"PRIu64"\n", SV_Arg(operand), basm->program_size);
-				   // * or parse operand as name
+				   //fprintf(stdout, "Operand = %"SV_Fmt" at %"PRIu64"\n", SV_Arg(operand), basm->program_size);
+				   // * ------ or parse operand as name
+
+				   // * Validate Bindings
+				   if(sv_eq(token, cstr_as_sv("native"))) {
+				       if(!validate_bindings(basm, operand, "native")) {
+					   fprintf(stderr, "%"SV_Fmt":%d: ERROR: Trying to call label using `native` directive. Use `call` directive to call labels. `%"SV_Fmt"`\n",
+					   SV_Arg(input_file_path), line_number, SV_Arg(token));
+					   exit(1);
+				       }
+				   }
+				   else if(sv_eq(token, cstr_as_sv("call"))) {
+				       if(!validate_bindings(basm, operand, "label")) {
+					   fprintf(stderr, "%"SV_Fmt":%d: ERROR: Trying to call not a label. `%"SV_Fmt"` is not a label, but the call instructions accepts only literals or labels.\n",
+					   SV_Arg(input_file_path), line_number, SV_Arg(operand));
+					   exit(1);
+				       }				       			       
+				   }
+				   
 				   basm_push_defered_operand(basm, basm->program_size, operand);
 			   }
 		       }
