@@ -13,3 +13,4 @@ main:
 	call dump_i64
 	call dump_i64
 	halt
+
