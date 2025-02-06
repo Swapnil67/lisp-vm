@@ -1549,7 +1549,9 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 	       }
 	       else if(sv_eq(token, cstr_as_sv("entry"))) {
 		   if(basm->has_entry) {
-		       fprintf(stderr, SV_Fmt":%d: ERROR: entry point has been already set!\n", SV_Arg(input_file_path), line_number);
+		       fprintf(stderr, FL_Fmt": ERROR: entry point has been already set!\n", FL_Arg(location));
+		       fprintf(stderr, FL_Fmt": NOTE: the first entry point\n", FL_Arg(basm->entry_location));
+		       exit(1);
 		   }
 		   
 		   line = sv_trim(line);
@@ -1571,6 +1573,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 		       basm->entry = entry.as_u64;
 		   }
 		   basm->has_entry = true;
+		   basm->entry_location = location;
 	       }
 	       else if(sv_eq(token, cstr_as_sv("bind"))) {
 		   fprintf(stderr, "%.*s:%d: ERROR: %%bind directive has been removed! Use %%const directive to define consts. Use %%native directive to define native functions. `%.*s`\n",
@@ -1673,6 +1676,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
       }
   }
 
+  // * Resolve deferred entry point
   if(basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
       Word output = {0};
       if(!basm_resolve_binding(
