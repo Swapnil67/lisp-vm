@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-%bind N 10
+%const N 10
 
 ; Initial Stack
 ; 100

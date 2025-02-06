@@ -2,10 +2,9 @@
 
 %include "./examples/natives.hasm"
 %entry main
-%bind N 256
+%const N 256
 
 main:
-
        push 0		; i
 loop:
 	dup 0

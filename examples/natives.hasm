@@ -1,12 +1,12 @@
-%bind alloc            0
-%bind free             1
-%bind print_f64        2
-%bind print_ptr        5
-%bind dump_memory      6
-%bind write            7
+%native alloc            0
+%native free             1
+%native print_f64        2
+%native print_ptr        5
+%native dump_memory      6
+%native write            7
 
 ;; TODO: a better way of allocating memory for standard printing functions
-%bind print_memory     "*********************************"
+%const print_memory     "*********************************"
 
 
 ;; Initial

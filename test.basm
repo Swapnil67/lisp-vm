@@ -1,0 +1,112 @@
+    swap  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    read8 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    read8 
+    dup  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    write8 
+    dup  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    write8 
+    drop 
+    drop 
+    ret 
+    swap  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    dup  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    divi 
+    dup  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    eqi 
+    jmp_if  42 ;; i64: 42, f64: 0.000000, ptr: 0x2a
+    dup  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    dup  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    minusi 
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    plusi 
+    call  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    minusi 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    push  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    minusi 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    swap  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    plusi 
+    swap  2 ;; i64: 2, f64: 0.000000, ptr: 0x2
+    jmp  20 ;; i64: 20, f64: 0.000000, ptr: 0x14
+    drop 
+    drop 
+    drop 
+    ret 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    push  10 ;; i64: 10, f64: 0.000000, ptr: 0xa
+    modu 
+    push  48 ;; i64: 48, f64: 0.000000, ptr: 0x30
+    plusi 
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    write8 
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    plusi 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    push  10 ;; i64: 10, f64: 0.000000, ptr: 0xa
+    divu 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    equ 
+    not 
+    jmp_if  48 ;; i64: 48, f64: 0.000000, ptr: 0x30
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    minusi 
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    dup  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    call  15 ;; i64: 15, f64: 0.000000, ptr: 0xf
+    native  7 ;; i64: 7, f64: 0.000000, ptr: 0x7
+    drop 
+    ret 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    dup  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    gei 
+    jmp_if  90 ;; i64: 90, f64: 0.000000, ptr: 0x5a
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  45 ;; i64: 45, f64: 0.000000, ptr: 0x2d
+    write8 
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    native  7 ;; i64: 7, f64: 0.000000, ptr: 0x7
+    push  18446744073709551615 ;; i64: -1, f64: -nan, ptr: 0xffffffffffffffff
+    multi 
+    call  46 ;; i64: 46, f64: 0.000000, ptr: 0x2e
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  10 ;; i64: 10, f64: 0.000000, ptr: 0xa
+    write8 
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    native  7 ;; i64: 7, f64: 0.000000, ptr: 0x7
+    ret 
+    swap  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    call  46 ;; i64: 46, f64: 0.000000, ptr: 0x2e
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  10 ;; i64: 10, f64: 0.000000, ptr: 0xa
+    write8 
+    push  0 ;; i64: 0, f64: 0.000000, ptr: (nil)
+    push  1 ;; i64: 1, f64: 0.000000, ptr: 0x1
+    native  7 ;; i64: 7, f64: 0.000000, ptr: 0x7
+    ret 
+entry:
+    call  7 ;; i64: 7, f64: 0.000000, ptr: 0x7
+    push  10 ;; i64: 10, f64: 0.000000, ptr: 0xa
+    call  77 ;; i64: 77, f64: 0.000000, ptr: 0x4d
+    halt 

@@ -2,6 +2,9 @@
 %entry main
 
 main:
+	;; TODO Fix this error
+        ;; call write
+       
 	push 10
 	push 0
 	push -10

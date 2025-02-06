@@ -1,7 +1,7 @@
 %include "./examples/natives.hasm"
 
-%bind hello "Hello, World"
-%bind hello_end ""
+%const hello "Hello, World"
+%const hello_end ""
 
 %entry main
 
