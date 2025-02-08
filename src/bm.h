@@ -202,7 +202,7 @@ struct Bm {
 Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
 void bm_push_native(Bm *bm, Bm_Native native);
-void bm_dump_stack(FILE *stream, const Bm *bm);
+Err bm_dump_stack(Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
 #define BM_FILE_MAGIC 0x4D42
@@ -1049,20 +1049,20 @@ void bm_push_native(Bm *bm, Bm_Native native) {
     bm->natives[bm->natives_size++] = native;
 }
 
-void bm_dump_stack(FILE *stream, const Bm *bm) {
-    fprintf(stream, "Stack:\n");
+Err bm_dump_stack(Bm *bm) {
+    fprintf(stdout, "Stack:\n");
     if(bm->stack_size > 0) {
 	for(Inst_Addr i = 0; i < bm->stack_size; ++i) {
-	    fprintf(stream, "u64:  %"PRIu64", i64: %"PRIi64", f64: %lf, ptr: %p\n",
+	    fprintf(stdout, "u64:  %"PRIu64", i64: %"PRIi64", f64: %lf, ptr: %p\n",
 				bm->stack[i].as_u64,
 				bm->stack[i].as_i64,
 				bm->stack[i].as_f64,
 				bm->stack[i].as_ptr);
 	}
     } else {
-	fprintf(stream, "  [empty]\n");
+	fprintf(stdout, "  [empty]\n");
     }
-    
+    return ERR_OK;
 }
 
 // * Read from file -> bm->program buffer

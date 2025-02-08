@@ -46,7 +46,9 @@ int main(int argc, char *argv[]) {
 	case INST_PUSH: {
 	    printf("    ;; push %"PRIu64"\n", inst.operand.as_u64);
 	    printf("    mov rsi, [stack_top]\n");
-	    printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
+	    // printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
+	    printf("    mov rax, 0x%"PRIX64"\n", inst.operand.as_u64);
+	    printf("    mov QWORD [rsi], rax\n");
 	    printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
 	} break;
 	
