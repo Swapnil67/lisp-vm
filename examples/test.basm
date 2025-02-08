@@ -3,14 +3,9 @@
 %entry main
 
 main:
-	;; TODO Fix this error
-        ;; call write
-       
-	push 10
-	push 0
-	push -10
-	call dump_i64
-	call dump_i64
-	call dump_i64
+
+	push 0.0123456789
+	call print_frac
+		
 	halt
 

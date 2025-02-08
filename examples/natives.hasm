@@ -4,10 +4,11 @@
 %native print_ptr        5
 %native dump_memory      6
 %native write            7
+%native dump_stack       8
 
 ;; TODO: a better way of allocating memory for standard printing functions
 %const print_memory     "*********************************"
-
+%const FRAC_PRECISION 10
 
 ;; Initial
 ;; ret
@@ -99,6 +100,226 @@ reverse:
 	
 	ret
 
+
+;; frac(3.142) = 0.142
+;; Initial Stack
+;; ret
+;; x
+frac:
+	swap 1
+	    dup 0
+	    f2i
+	    i2f
+	    minusf      ;; x - i2f(f2i(x))
+	swap 1
+	ret
+
+
+;; Floating Absolute Function
+;; fabs(69.0)  = 69.0
+;; fabs(-69.0) = 69.0
+;; Initial Stack
+;; ret
+;; x
+fabs:
+	swap 1
+	dup 0
+	push 0.0
+	gef
+	jmp_if fabs_skip_negation
+	       ;; Stack here
+	       ;; x
+	       ;; ret 
+	       ;; push -1.0
+	       ;; mulf
+	       ;; OR
+	       push -0.0
+	       xor
+	fabs_skip_negation:
+	swap 1
+	ret
+
+;; floor(1.2) = 1
+;; floor(-1.2) = -2
+;; Initial Stack
+;; ret
+;; n
+floor:
+	swap 1
+	    f2i
+	    i2f
+	    dup 0
+	    dup 0
+	    eqf
+	    jmp_if floor_skip_increment
+	    push 0.0
+	    gef
+	    jmp_if floor_skip_increment
+		push -1.0
+		plusf
+
+	    floor_skip_increment:
+	swap 1
+	ret
+
+
+;; Computes 1.0^{-n}
+;; Initial Stack
+;; ret
+;; n
+b:
+	swap 1
+	push 1.0
+	
+	b_loop_begin:
+
+		dup 1
+		push 0
+		lei
+		jmp_if b_loop_end
+
+		;; Stack here
+		;; 1.0
+		;; n
+		;; ret
+		push 0.1
+		mulf
+
+		;; Stack here
+		;; 1.0 * 0.1
+		;; n
+		;; ret
+		swap 1
+		push 1
+		minusi
+		swap 1
+
+		jmp b_loop_begin
+
+
+	b_loop_end:
+
+	;; Stack here
+	;; result
+	;; 0		(n)
+	;; ret
+
+	swap 1
+	drop
+	swap 1 
+	
+	ret
+
+
+;; Initial Stack
+;; ret
+;; num
+print_frac:
+	swap 1
+	;; M = (1^{-n}) / 2
+	push FRAC_PRECISION
+	call b		
+	push 2.0
+	divf
+	
+	print_frac_loop_begin:
+	    ;; U
+	    dup 1
+	    push 10.0
+	    mulf             ;; 0.69420 * 10.0 = 6.9420
+	    call floor	     ;; |_6.9420_|     = 6.0000
+
+	    ;; U = floor(f * 10)
+	    ;; M			(Precision)
+	    ;; R = f
+	    ;; ret
+	    ;; Update fraction now
+	    swap 2
+	        push 10.0
+		mulf
+		call frac
+	    swap 2
+
+	    ;; Updating M (Precision)
+	    swap 1
+	    	 push 10.0
+		 mulf
+	    swap 1
+
+	    ;; U = floor(f * 10)
+	    ;; M			(Precision)
+	    ;; R = frac(f * 10.0)
+	    ;; ret
+	    ;; if(R < M) break;
+	    dup 2
+	    dup 2
+	    ltf
+	    jmp_if print_frac_loop_end
+
+
+	    ;; U = floor(f * 10)
+	    ;; M			(Precision)
+	    ;; R = frac(f * 10.0)
+	    ;; ret
+	    ;; if(R > 1 - M) break;
+	    dup 2
+	    dup 2
+	    push 1.0
+	    swap 1
+	    minusf        ;; (1 - M)
+	    gtf
+	    jmp_if print_frac_loop_end
+
+
+	    ;; Print the U
+	    f2i
+	    push '0'
+	    plusi
+	    push print_memory
+	    swap 1
+	    write8
+
+	    push print_memory
+	    push 1
+	    native write
+
+	    ;; native dump_stack
+
+
+	jmp print_frac_loop_begin
+	print_frac_loop_end:
+
+	;; if(R < 0.5) U
+	;; else U = U + 1
+	dup 2
+	push 0.5
+	lef
+	jmp_if print_frac_skip_inc
+	       push 1.0
+	       plusf
+
+	print_frac_skip_inc:
+
+	;; Print the U
+	f2i
+	push '0'
+	plusi
+	push print_memory
+	swap 1
+	write8
+
+	push print_memory
+	push 1
+	native write
+
+	;; Drop Unwanted Shit
+	drop
+	drop
+
+	;; native dump_stack
+
+	ret
+	
 
 
 ;; Initial Stack
