@@ -106,7 +106,7 @@ static Err native_write(Bm *bm) {
     }
     Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
     uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
-    
+    // printf("%"PRIi64"\n", count);
     if(addr >= BM_MEMORY_CAPACITY) {
 	return ERR_ILLEGAL_MEMORY_ACCESS;
     }
@@ -169,27 +169,28 @@ int main(int argc, char **argv)
     bm_load_program_from_file(&bm, input_file_path);
 
     // * Register native functions to bm
-    bm_push_native(&bm, bm_alloc);	  // 0
-    bm_push_native(&bm, bm_free);	  // 1
-    bm_push_native(&bm, bm_print_f64);    // 2
-    bm_push_native(&bm, bm_print_i64);    // 3 
-    bm_push_native(&bm, bm_print_u64);    // 4
-    bm_push_native(&bm, bm_print_ptr);    // 5
-    bm_push_native(&bm, bm_dump_memory);  // 6
-    bm_push_native(&bm, native_write);        // 7
+    bm_push_native(&bm, bm_alloc);		// 0
+    bm_push_native(&bm, bm_free);		// 1
+    bm_push_native(&bm, bm_print_f64);		// 2
+    bm_push_native(&bm, bm_print_i64);		// 3 
+    bm_push_native(&bm, bm_print_u64);		// 4
+    bm_push_native(&bm, bm_print_ptr);		// 5
+    bm_push_native(&bm, bm_dump_memory);	// 6
+    bm_push_native(&bm, native_write);		// 7
+    bm_push_native(&bm, bm_dump_stack);		// 8
 
     if (!debug) {
 	Err err = bm_execute_program(&bm, limit);
-	// bm_dump_stack(stdout, &bm);
+	// bm_dump_stack(&bm);
 	if (err != ERR_OK) {
 	    fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
 	    return 1;
 	}
-	// bm_dump_stack(stdout, &bm);	
+	// bm_dump_stack(&bm);	
     }
     else {
 	while (limit != 0 && !bm.halt) {
-	    bm_dump_stack(stdout, &bm);
+	    bm_dump_stack(&bm);
 	    printf("Instruction: %s %"PRIu64"\n",
 	    inst_name(bm.program[bm.ip].type),
 	    bm.program[bm.ip].operand.as_u64);
