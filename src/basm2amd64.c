@@ -199,10 +199,18 @@ int main(int argc, char *argv[]) {
 	} break;	
 
 
-	case INST_PLUSF: assert(false && "TODO: PLUSF is not implemented");
-	case INST_MINUSF: assert(false && "TODO: MINUSF is not implemented");
-	case INST_MULF: assert(false && "TODO: MULF is not implemented");
-	case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
+	case INST_PLUSF:  {
+	    printf("    ;; TODO plusf\n");
+	} break;
+	case INST_MINUSF: {
+	    printf("    ;; TODO minusf\n");
+	} break;
+	case INST_MULF:  {
+	    printf("    ;; TODO mulf\n");
+	} break;
+	case INST_DIVF:  {
+	    printf("    ;; TODO divf\n");
+	} break;
 	
 	case INST_NATIVE: {
 	    if(inst.operand.as_u64 == 3) {
@@ -315,7 +323,9 @@ int main(int argc, char *argv[]) {
 	    
 	} break;
 	
-	case INST_GEI: assert(false && "TODO: GEI is not implemented");
+	case INST_GEI:  {
+	    printf("    ;; TODO gei\n");
+	} break;
 	case INST_GTI: {
 	    printf("    ;; TODO gti\n");
 	} break;
@@ -341,11 +351,21 @@ int main(int argc, char *argv[]) {
 	case INST_NEU: assert(false && "TODO: NEU is not implemented");
 
 	// * Floating Comparisions
-	case INST_EQF: assert(false && "TODO: EQF is not implemented");
-	case INST_GEF: assert(false && "TODO: GEF is not implemented");
-	case INST_GTF: assert(false && "TODO: GTF is not implemented");
-	case INST_LEF: assert(false && "TODO: LEF is not implemented");
-	case INST_LTF: assert(false && "TODO: LTF is not implemented");
+	case INST_EQF:  {
+	    printf("    ;; TODO eqf\n");
+	} break;
+	case INST_GEF:  {
+	    printf("    ;; TODO gef\n");
+	} break;
+	case INST_GTF:  {
+	    printf("    ;; TODO gtf\n");
+	} break;
+	case INST_LEF:  {
+	    printf("    ;; TODO lef\n");
+	} break;
+	case INST_LTF:  {
+	    printf("    ;; TODO ltf\n");
+	} break;
 	
 	case INST_NEF: {
 	    printf("    ;; TODO nef\n");
@@ -358,9 +378,13 @@ int main(int argc, char *argv[]) {
 	    printf("    syscall\n");
 	} break;
 
-	case INST_ANDB: assert(false && "TODO: ANDB is not implemented");
+	case INST_ANDB:  {
+	    printf("    ;; TODO andb\n");
+	} break;
 	case INST_ORB: assert(false && "TODO: ORB is not implemented");
-	case INST_XOR: assert(false && "TODO: XOR is not implemented");
+	case INST_XOR:  {
+	    printf("    ;; TODO xor\n");
+	} break;
 	case INST_SHR: assert(false && "TODO: SHR is not implemented");
 	case INST_SHL: assert(false && "TODO: SHL is not implemented");
 	case INST_NOTB: assert(false && "TODO: NOTB is not implemented");
@@ -405,9 +429,13 @@ int main(int argc, char *argv[]) {
 	case INST_WRITE16: assert(false && "TODO: WRITE16 is not implemented");
 	case INST_WRITE32: assert(false && "TODO: WRITE32 is not implemented");
 	case INST_WRITE64: assert(false && "TODO: WRITE64 is not implemented");
-	case INST_I2F: assert(false && "TODO: I2F is not implemented");
+	case INST_I2F: {
+	    printf("    ;; TODO i2f\n");
+	} break;
 	case INST_U2F: assert(false && "TODO: U2F is not implemented");
-	case INST_F2I: assert(false && "TODO: F2I is not implemented");
+	case INST_F2I: {
+	    printf("    ;; TODO f2i\n");
+	} break;
 	case INST_F2U: assert(false && "TODO: F2U is not implemented");
 	case NUMBER_OF_INSTS:
 	default:
