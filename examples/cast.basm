@@ -17,11 +17,11 @@ main:
 
 	push 10
 	i2f
-	native print_f64
+	call dump_f64
 
 	push -10
 	i2f
-	native print_f64
+	call dump_f64
 
 	halt
 
