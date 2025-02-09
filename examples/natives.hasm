@@ -392,9 +392,70 @@ print_positive_loop:
      native write
 
      drop
-
      ret
 
+
+;; Print Floating Integers
+;; Initial Stack
+;; ret
+;; num
+dump_f64:
+    swap 1
+
+    ;; Check if number is negative
+    dup 0
+    push -0.0
+    andb
+    not
+    jmp_if dump_f64_skip_negative
+	   ;; Since only sign bit is set in -0.0 this will make the number positive
+	   push -0.0
+	   xor
+
+	   ;; Print the dash (-)
+	   push print_memory
+	   push '-'
+	   write8
+
+	   push print_memory
+	   push 1
+	   native write
+
+    dump_f64_skip_negative:
+
+    ;; Print the integer part first
+    dup 0
+    dup 0
+    f2i
+    call print_positive
+
+    ;; Print the dot (.)
+    push print_memory
+    push '.'
+    write8
+
+    push print_memory
+    push 1
+    native write
+
+    ;; Print the fraction part
+    f2i
+    i2f
+    minusf
+    call print_frac
+
+    ;; Print New Line
+    push print_memory
+    push 10
+    write8
+
+    push print_memory
+    push 1
+    native write
+    
+    ;; native dump_stack
+
+    ret
 
 ;; Initial Stack
 ;; ret

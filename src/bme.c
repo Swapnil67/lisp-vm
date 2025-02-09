@@ -106,7 +106,7 @@ static Err native_write(Bm *bm) {
     }
     Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
     uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
-    
+    // printf("%"PRIi64"\n", count);
     if(addr >= BM_MEMORY_CAPACITY) {
 	return ERR_ILLEGAL_MEMORY_ACCESS;
     }
