@@ -45,6 +45,7 @@ typedef enum {
     ERR_DIV_BY_ZERO,
     ERR_ILLEGAL_OPERAND,
     ERR_ILLEGAL_MEMORY_ACCESS,
+    ERR_NULL_NATIVE,
 } Err;
 
 const char *err_as_cstr(Err err);
@@ -338,6 +339,8 @@ const char *err_as_cstr(Err err) {
 	return "ERR_ILLEGAL_OPERAND";
     case ERR_ILLEGAL_MEMORY_ACCESS:
 	return "ERR_ILLEGAL_MEMORY_ACCESS";
+    case ERR_NULL_NATIVE:
+	return "ERR_NULL_NATIVE";
     default:
 	assert(0 && "err_as_cstr: Unreachable");
     }   
@@ -699,6 +702,7 @@ Err native_write(Bm *bm) {
 
 
 void bm_load_standard_natives(Bm *bm) {
+    // * TODO: Remove dead natives from the list (0-6)
     bm_push_native(bm, native_alloc);		// 0
     bm_push_native(bm, native_free);		// 1
     bm_push_native(bm, native_print_f64);	// 2
@@ -897,8 +901,16 @@ Err bm_execute_inst(Bm *bm) {
 	if(inst.operand.as_u64 > bm->natives_size) {
 	    return ERR_ILLEGAL_OPERAND;
 	}
+
+	if(!bm->natives[inst.operand.as_u64]) {
+	    return ERR_NULL_NATIVE;
+	}
+	
 	// * call the native functions
-	bm->natives[inst.operand.as_u64](bm);
+	const Err err = bm->natives[inst.operand.as_u64](bm);
+	if(err != ERR_OK) {
+	    return err;
+	}
 	bm->ip += 1;
 	break;
 
