@@ -1720,23 +1720,27 @@ String_View basm_slurp_file(Basm *basm, String_View file_path)
         exit(1);
     }
 
+    // * 'm' will have the number of bytes in file
     long m = ftell(f);
     if(m < 0) {
         fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
         exit(1);
     }
 
+    // * Allocate 'm' bytes buffer
     char *buffer = basm_alloc(basm, (size_t)m);
     if(buffer == NULL) {
         fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
         exit(1);
     }
-
+	
+    // * Set the file location to the start of file
     if (fseek(f, 0, SEEK_SET) < 0) {
         fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
         exit(1);
     }
 
+    // * Read from 0 to 'm' bytes (i.e. from Start to End of file in buffer)
     size_t n = fread(buffer, 1, (size_t)m, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
