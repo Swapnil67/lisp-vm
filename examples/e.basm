@@ -37,7 +37,7 @@ main:
 
     jmp_if loop
 
-    native print_f64
+    call dump_f64
 
     halt
 
