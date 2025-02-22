@@ -45,6 +45,7 @@ typedef enum {
     ERR_DIV_BY_ZERO,
     ERR_ILLEGAL_OPERAND,
     ERR_ILLEGAL_MEMORY_ACCESS,
+    ERR_NULL_NATIVE,
 } Err;
 
 const char *err_as_cstr(Err err);
@@ -288,6 +289,17 @@ void basm_translate_source(Basm *basm, String_View input_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 
+void bm_load_standard_natives(Bm *bm);
+
+Err native_alloc(Bm *bm);
+Err native_free(Bm *bm);
+Err native_print_f64(Bm *bm);
+Err native_print_i64(Bm *bm);
+Err native_print_u64(Bm *bm);
+Err native_print_ptr(Bm *bm);
+Err native_dump_memory(Bm *bm);
+Err native_write(Bm *bm);
+
 #endif // BM_H_
 
 
@@ -327,6 +339,8 @@ const char *err_as_cstr(Err err) {
 	return "ERR_ILLEGAL_OPERAND";
     case ERR_ILLEGAL_MEMORY_ACCESS:
 	return "ERR_ILLEGAL_MEMORY_ACCESS";
+    case ERR_NULL_NATIVE:
+	return "ERR_NULL_NATIVE";
     default:
 	assert(0 && "err_as_cstr: Unreachable");
     }   
@@ -581,6 +595,124 @@ int inst_has_operand(Inst_Type type) {
     }
 }
 
+Err native_alloc(Bm *bm) {
+	if (bm->stack_size < 1) {
+		return ERR_STACK_UNDERFLOW;
+	}
+	
+	// * Allocate the memory and save the ptr to top of stack
+	bm->stack[bm->stack_size - 1].as_ptr = malloc(bm->stack[bm->stack_size - 1].as_u64);
+	return ERR_OK;
+}
+
+Err native_free(Bm *bm) {
+    if(bm->stack_size < 1) {
+        return ERR_STACK_UNDERFLOW;
+    }
+    // * Top of stack will have pointer
+    free(bm->stack[bm->stack_size - 1].as_ptr);
+    bm->stack_size -= 1;
+    return ERR_OK;
+}
+
+Err native_print_f64(Bm *bm) {
+    if(bm->stack_size < 1) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    printf("%lf\n", bm->stack[bm->stack_size-1].as_f64);
+    bm->stack_size -= 1;
+    return ERR_OK;
+}
+
+Err native_print_u64(Bm *bm) {
+    if(bm->stack_size < 1) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    // printf("Print Unsigned Integer\n");
+    printf("%"PRIu64"\n", bm->stack[bm->stack_size-1].as_u64);
+    bm->stack_size -= 1;
+    return ERR_OK;
+}
+
+Err native_print_i64(Bm *bm) {
+    if(bm->stack_size < 1) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    // printf("Print Integer\n");
+    printf("%"PRIi64"\n", bm->stack[bm->stack_size-1].as_i64);
+    bm->stack_size -= 1;
+    return ERR_OK;
+}
+
+Err native_print_ptr(Bm *bm) {
+    if(bm->stack_size < 1) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    // printf("Print Pointer\n");
+    printf("%p\n", bm->stack[bm->stack_size-1].as_ptr);
+    bm->stack_size -= 1;
+    return ERR_OK;
+}
+
+Err native_dump_memory(Bm *bm) {
+    if(bm->stack_size < 2) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
+    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
+    
+    if(addr >= BM_MEMORY_CAPACITY) {
+	return ERR_ILLEGAL_MEMORY_ACCESS;
+    }
+
+    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
+	return ERR_ILLEGAL_MEMORY_ACCESS;	
+    }
+    
+    for(uint64_t i = 0; i < count; ++i) {
+	fprintf(stdout, "%02X ", bm->memory[addr + i]);	
+    }
+    
+    fprintf(stdout, "\n");
+    bm->stack_size -= 2;
+    return ERR_OK;
+}
+
+Err native_write(Bm *bm) {
+    if(bm->stack_size < 2) {
+	return ERR_STACK_UNDERFLOW;
+    }
+    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
+    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
+    // printf("%"PRIi64"\n", count);
+    if(addr >= BM_MEMORY_CAPACITY) {
+	return ERR_ILLEGAL_MEMORY_ACCESS;
+    }
+
+    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
+	return ERR_ILLEGAL_MEMORY_ACCESS;	
+    }
+
+    fwrite(&bm->memory[addr], sizeof(bm->memory[0]), count, stdout);
+
+    bm->stack_size -= 2;
+
+    return ERR_OK;
+}
+
+
+void bm_load_standard_natives(Bm *bm) {
+    // * TODO: Remove dead natives from the list (0-6)
+    bm_push_native(bm, native_alloc);		// 0
+    bm_push_native(bm, native_free);		// 1
+    bm_push_native(bm, native_print_f64);	// 2
+    bm_push_native(bm, native_print_i64);	// 3 
+    bm_push_native(bm, native_print_u64);	// 4
+    bm_push_native(bm, native_print_ptr);	// 5
+    bm_push_native(bm, native_dump_memory);	// 6
+    bm_push_native(bm, native_write);		// 7
+    bm_push_native(bm, bm_dump_stack);		// 8
+}
 
 // * Execute basm program
 Err bm_execute_program(Bm *bm, int limit) {
@@ -769,8 +901,16 @@ Err bm_execute_inst(Bm *bm) {
 	if(inst.operand.as_u64 > bm->natives_size) {
 	    return ERR_ILLEGAL_OPERAND;
 	}
+
+	if(!bm->natives[inst.operand.as_u64]) {
+	    return ERR_NULL_NATIVE;
+	}
+	
 	// * call the native functions
-	bm->natives[inst.operand.as_u64](bm);
+	const Err err = bm->natives[inst.operand.as_u64](bm);
+	if(err != ERR_OK) {
+	    return err;
+	}
 	bm->ip += 1;
 	break;
 

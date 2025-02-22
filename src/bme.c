@@ -17,111 +17,6 @@ static void usage(FILE *stream, const char *program) {
     fprintf(stream, "Usage: %s -i <input.bm> [-l <limit>] [-h] [-d]\n", program);
 }
 
-static Err bm_alloc(Bm *bm) {
-	if (bm->stack_size < 1) {
-		return ERR_STACK_UNDERFLOW;
-	}
-	
-	// * Allocate the memory and save the ptr to top of stack
-	bm->stack[bm->stack_size - 1].as_ptr = malloc(bm->stack[bm->stack_size - 1].as_u64);
-	return ERR_OK;
-}
-
-static Err bm_free(Bm *bm) {
-    if(bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-    // * Top of stack will have pointer
-    free(bm->stack[bm->stack_size - 1].as_ptr);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_f64(Bm *bm) {
-    if(bm->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    printf("%lf\n", bm->stack[bm->stack_size-1].as_f64);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_u64(Bm *bm) {
-    if(bm->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    // printf("Print Unsigned Integer\n");
-    printf("%"PRIu64"\n", bm->stack[bm->stack_size-1].as_u64);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_i64(Bm *bm) {
-    if(bm->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    // printf("Print Integer\n");
-    printf("%"PRIi64"\n", bm->stack[bm->stack_size-1].as_i64);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_ptr(Bm *bm) {
-    if(bm->stack_size < 1) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    // printf("Print Pointer\n");
-    printf("%p\n", bm->stack[bm->stack_size-1].as_ptr);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_dump_memory(Bm *bm) {
-    if(bm->stack_size < 2) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
-    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
-    
-    if(addr >= BM_MEMORY_CAPACITY) {
-	return ERR_ILLEGAL_MEMORY_ACCESS;
-    }
-
-    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
-	return ERR_ILLEGAL_MEMORY_ACCESS;	
-    }
-    
-    for(uint64_t i = 0; i < count; ++i) {
-	fprintf(stdout, "%02X ", bm->memory[addr + i]);	
-    }
-    
-    fprintf(stdout, "\n");
-    bm->stack_size -= 2;
-    return ERR_OK;
-}
-
-static Err native_write(Bm *bm) {
-    if(bm->stack_size < 2) {
-	return ERR_STACK_UNDERFLOW;
-    }
-    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
-    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
-    // printf("%"PRIi64"\n", count);
-    if(addr >= BM_MEMORY_CAPACITY) {
-	return ERR_ILLEGAL_MEMORY_ACCESS;
-    }
-
-    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
-	return ERR_ILLEGAL_MEMORY_ACCESS;	
-    }
-
-    fwrite(&bm->memory[addr], sizeof(bm->memory[0]), count, stdout);
-
-    bm->stack_size -= 2;
-
-    return ERR_OK;
-}
-
 int main(int argc, char **argv)
 {
     const char *program = shift(&argc, &argv);
@@ -169,16 +64,8 @@ int main(int argc, char **argv)
     bm_load_program_from_file(&bm, input_file_path);
 
     // * Register native functions to bm
-    bm_push_native(&bm, bm_alloc);		// 0
-    bm_push_native(&bm, bm_free);		// 1
-    bm_push_native(&bm, bm_print_f64);		// 2
-    bm_push_native(&bm, bm_print_i64);		// 3 
-    bm_push_native(&bm, bm_print_u64);		// 4
-    bm_push_native(&bm, bm_print_ptr);		// 5
-    bm_push_native(&bm, bm_dump_memory);	// 6
-    bm_push_native(&bm, native_write);		// 7
-    bm_push_native(&bm, bm_dump_stack);		// 8
-
+    bm_load_standard_natives(&bm);
+    
     if (!debug) {
 	Err err = bm_execute_program(&bm, limit);
 	// bm_dump_stack(&bm);
