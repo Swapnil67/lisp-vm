@@ -171,9 +171,7 @@ static_assert(sizeof(Word) == BM_WORD_SIZE, "The BM's Word is expected to be 64 
 
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
-// typedef size_t Arena;
 
-// Instruction Structure
 typedef struct {
     Inst_Type type;
     Word operand;
@@ -276,9 +274,7 @@ typedef struct {
     size_t memory_capacity;
 
     Arena arena;
-    // char arena[BASM_ARENA_CAPACITY];
-    // size_t arena_size;
-
+    
     size_t include_level;
 } Basm;
 
@@ -1393,13 +1389,6 @@ void *arena_alloc(Arena *arena, size_t size) {
     return result;
 }
 
-// void *basm_alloc(Basm *basm, size_t size) {
-//     assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
-//     void *result = basm->arena + basm->arena_size;
-//     basm->arena_size += size;
-//     return result;
-// }
-
 const char* binding_kind_as_cstr(Binding_Kind kind) {
     switch(kind) {
     case BINDING_LABEL:		return "label";
@@ -1506,18 +1495,7 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     fclose(f);
 }
 
-// void* arena_sv_to_cstr(Basm *basm, String_View sv) {
-//     assert(basm->arena_size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
-
-//     // bring the pointer to the last address in arena
-//     void *result = basm->arena + basm->arena_size;
-//     basm->arena_size += (sv.count + 1);
-//     memcpy(result, sv.data, sv.count);
-//     // result[basm->arena_size] = '\0'; 
-//     return result;
-// }
-
-void* arena_sv_to_cstr(Arena *arena, String_View sv) {
+void *arena_sv_to_cstr(Arena *arena, String_View sv) {
     assert(arena->size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
 
     // bring the pointer to the last address in arena
