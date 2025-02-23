@@ -253,7 +253,7 @@ typedef struct {
 } Arena;
 
 void *arena_alloc(Arena *arena, size_t size);
-void *arena_sv_to_cstr(Arena *arena, String_View sv);
+const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_slurp_file(Arena *arena, String_View file_path);
 
 typedef struct {
@@ -1389,7 +1389,7 @@ void *arena_alloc(Arena *arena, size_t size) {
     return result;
 }
 
-void *arena_sv_to_cstr(Arena *arena, String_View sv) {
+const char *arena_sv_to_cstr(Arena *arena, String_View sv) {
     assert(arena->size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
 
     // bring the pointer to the last address in arena
@@ -1408,12 +1408,11 @@ String_View arena_slurp_file(Arena *arena, String_View file_path)
     //             SV_Arg(file_path),
     //             strerror(errno));
     //     exit(1);
-    // }
-    
+    // }    
     // memcpy(file_path_cstr, file_path.data, file_path.count);
     // file_path_cstr[file_path.count] = '\0';
 
-    char *file_path_cstr = arena_sv_to_cstr(arena, file_path);
+    const char *file_path_cstr = arena_sv_to_cstr(arena, file_path);
     
     FILE *f = fopen(file_path_cstr, "r");
     if (f == NULL) {
@@ -1606,7 +1605,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
 	// cstr[sv.count] = '\0';
 
 	// TODO Implement this function
-	char *cstr = arena_sv_to_cstr(&basm->arena, sv);
+	const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
 	char *endptr = 0;
 	
 	Word result = {0};
