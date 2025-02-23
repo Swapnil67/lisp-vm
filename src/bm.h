@@ -171,7 +171,7 @@ static_assert(sizeof(Word) == BM_WORD_SIZE, "The BM's Word is expected to be 64 
 
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
-typedef size_t Arena;
+// typedef size_t Arena;
 
 // Instruction Structure
 typedef struct {
@@ -250,6 +250,14 @@ typedef struct {
 } Defered_Operand;
 
 typedef struct {
+    char buffer[BASM_ARENA_CAPACITY];
+    size_t size;
+} Arena;
+
+void *arena_alloc(Arena *arena, size_t size);
+void *arena_sv_to_cstr(Arena *arena, String_View sv);
+
+typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
     
@@ -267,14 +275,13 @@ typedef struct {
     size_t memory_size;
     size_t memory_capacity;
 
-    char arena[BASM_ARENA_CAPACITY];
-    Arena arena_size;
+    Arena arena;
+    // char arena[BASM_ARENA_CAPACITY];
+    // size_t arena_size;
 
     size_t include_level;
 } Basm;
 
-
-void* arena_sv_to_cstr(Basm *basm, String_View sv);
 void *basm_alloc(Basm *basm, size_t size);
 bool validate_bindings(Basm *basm, String_View operand, const char* kind);
 String_View basm_slurp_file(Basm *basm, String_View file_path);
@@ -1377,12 +1384,21 @@ void print_unresolved_names(const Basm *basm) {
     }
 }
 
-void *basm_alloc(Basm *basm, size_t size) {
-    assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
-    void *result = basm->arena + basm->arena_size;
-    basm->arena_size += size;
+
+// * Allocate `size` bytes in arena
+void *arena_alloc(Arena *arena, size_t size) {
+    assert(arena->size + size <= BASM_ARENA_CAPACITY);
+    void *result = arena->buffer + arena->size;
+    arena->size += size;
     return result;
 }
+
+// void *basm_alloc(Basm *basm, size_t size) {
+//     assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
+//     void *result = basm->arena + basm->arena_size;
+//     basm->arena_size += size;
+//     return result;
+// }
 
 const char* binding_kind_as_cstr(Binding_Kind kind) {
     switch(kind) {
@@ -1490,23 +1506,25 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     fclose(f);
 }
 
+// void* arena_sv_to_cstr(Basm *basm, String_View sv) {
+//     assert(basm->arena_size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
 
-// void *basm_alloc(Basm *basm, size_t size) {
-//     assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
-
+//     // bring the pointer to the last address in arena
 //     void *result = basm->arena + basm->arena_size;
-//     basm->arena_size += size;
+//     basm->arena_size += (sv.count + 1);
+//     memcpy(result, sv.data, sv.count);
+//     // result[basm->arena_size] = '\0'; 
 //     return result;
 // }
 
-void* arena_sv_to_cstr(Basm *basm, String_View sv) {
-    assert(basm->arena_size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
+void* arena_sv_to_cstr(Arena *arena, String_View sv) {
+    assert(arena->size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
 
     // bring the pointer to the last address in arena
-    void *result = basm->arena + basm->arena_size;
-    basm->arena_size += (sv.count + 1);
+    void *result = arena->buffer + arena->size;
+    arena->size += (sv.count + 1);
     memcpy(result, sv.data, sv.count);
-    // result[basm->arena_size] = '\0'; 
+
     return result;
 }
 
@@ -1548,7 +1566,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
 	// cstr[sv.count] = '\0';
 
 	// TODO Implement this function
-	char *cstr = arena_sv_to_cstr(basm, sv);
+	char *cstr = arena_sv_to_cstr(&basm->arena, sv);
 	char *endptr = 0;
 	
 	Word result = {0};
@@ -1837,7 +1855,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
 
 String_View basm_slurp_file(Basm *basm, String_View file_path)
 {
-    char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
+    // char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
+    char *file_path_cstr = arena_alloc(&basm->arena, file_path.count + 1);
     if(file_path_cstr == NULL) {
         fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
                 SV_Arg(file_path),
@@ -1868,7 +1887,8 @@ String_View basm_slurp_file(Basm *basm, String_View file_path)
     }
 
     // * Allocate 'm' bytes buffer
-    char *buffer = basm_alloc(basm, (size_t)m);
+    // char *buffer = basm_alloc(basm, (size_t)m);
+    char *buffer = arena_alloc(&basm->arena, (size_t)m);
     if(buffer == NULL) {
         fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
         exit(1);
