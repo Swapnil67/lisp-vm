@@ -254,6 +254,7 @@ typedef struct {
 
 void *arena_alloc(Arena *arena, size_t size);
 void *arena_sv_to_cstr(Arena *arena, String_View sv);
+String_View arena_slurp_file(Arena *arena, String_View file_path);
 
 typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
@@ -280,7 +281,6 @@ typedef struct {
 
 void *basm_alloc(Basm *basm, size_t size);
 bool validate_bindings(Basm *basm, String_View operand, const char* kind);
-String_View basm_slurp_file(Basm *basm, String_View file_path);
 int basm_resolve_binding(Basm *basm, String_View name, Word *output);
 int basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind);
 void basm_push_defered_operand(Basm *basm, Inst_Addr addr, String_View name);
@@ -1389,6 +1389,78 @@ void *arena_alloc(Arena *arena, size_t size) {
     return result;
 }
 
+void *arena_sv_to_cstr(Arena *arena, String_View sv) {
+    assert(arena->size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
+
+    // bring the pointer to the last address in arena
+    void *result = arena->buffer + arena->size;
+    arena->size += (sv.count + 1);
+    memcpy(result, sv.data, sv.count);
+
+    return result;
+}
+
+String_View arena_slurp_file(Arena *arena, String_View file_path)
+{
+    // char *file_path_cstr = arena_alloc(arena, file_path.count + 1);
+    // if(file_path_cstr == NULL) {
+    //     fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
+    //             SV_Arg(file_path),
+    //             strerror(errno));
+    //     exit(1);
+    // }
+    
+    // memcpy(file_path_cstr, file_path.data, file_path.count);
+    // file_path_cstr[file_path.count] = '\0';
+
+    char *file_path_cstr = arena_sv_to_cstr(arena, file_path);
+    
+    FILE *f = fopen(file_path_cstr, "r");
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path_cstr, strerror(errno));
+        exit(1);
+    }
+
+    // fseek(FILE *stream, long offset, int whence);
+    if (fseek(f, 0, SEEK_END) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
+        exit(1);
+    }
+
+    // * 'm' will have the number of bytes in file
+    long m = ftell(f);
+    if(m < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
+        exit(1);
+    }
+
+    // * Allocate 'm' bytes buffer
+    // char *buffer = basm_alloc(basm, (size_t)m);
+    char *buffer = arena_alloc(arena, (size_t)m);
+    if(buffer == NULL) {
+        fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
+        exit(1);
+    }
+	
+    // * Set the file location to the start of file
+    if (fseek(f, 0, SEEK_SET) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
+        exit(1);
+    }
+
+    // * Read from 0 to 'm' bytes (i.e. from Start to End of file in buffer)
+    size_t n = fread(buffer, 1, (size_t)m, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
+        exit(1);
+    }
+
+    fclose(f);
+    
+    return  (String_View) { .count = n, .data = buffer };
+}
+
+
 const char* binding_kind_as_cstr(Binding_Kind kind) {
     switch(kind) {
     case BINDING_LABEL:		return "label";
@@ -1495,16 +1567,6 @@ void basm_save_to_file(Basm *basm, const char *file_path) {
     fclose(f);
 }
 
-void *arena_sv_to_cstr(Arena *arena, String_View sv) {
-    assert(arena->size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
-
-    // bring the pointer to the last address in arena
-    void *result = arena->buffer + arena->size;
-    arena->size += (sv.count + 1);
-    memcpy(result, sv.data, sv.count);
-
-    return result;
-}
 
 Word basm_push_string_to_memory(Basm *basm, String_View sv) {
     assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
@@ -1566,7 +1628,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
 }
 
 void basm_translate_source(Basm *basm, String_View input_file_path) {    
-    String_View original_source = basm_slurp_file(basm, input_file_path);
+    String_View original_source = arena_slurp_file(&basm->arena, input_file_path);
     String_View source = original_source;
     // printf("Source: \n%s\n", source.data);
 
@@ -1828,66 +1890,6 @@ void basm_translate_source(Basm *basm, String_View input_file_path) {
   }
   // print_names(basm);
   // print_unresolved_names(basm);
-}
-
-
-String_View basm_slurp_file(Basm *basm, String_View file_path)
-{
-    // char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
-    char *file_path_cstr = arena_alloc(&basm->arena, file_path.count + 1);
-    if(file_path_cstr == NULL) {
-        fprintf(stderr, "ERROR: could not allocate memory for the file `%.*s`: %s\n",
-                SV_Arg(file_path),
-                strerror(errno));
-        exit(1);
-    }
-
-    memcpy(file_path_cstr, file_path.data, file_path.count);
-    file_path_cstr[file_path.count] = '\0';
-    
-    FILE *f = fopen(file_path_cstr, "r");
-    if (f == NULL) {
-        fprintf(stderr, "ERROR: could not open file `%s`: %s\n", file_path_cstr, strerror(errno));
-        exit(1);
-    }
-
-    // fseek(FILE *stream, long offset, int whence);
-    if (fseek(f, 0, SEEK_END) < 0) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
-        exit(1);
-    }
-
-    // * 'm' will have the number of bytes in file
-    long m = ftell(f);
-    if(m < 0) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
-        exit(1);
-    }
-
-    // * Allocate 'm' bytes buffer
-    // char *buffer = basm_alloc(basm, (size_t)m);
-    char *buffer = arena_alloc(&basm->arena, (size_t)m);
-    if(buffer == NULL) {
-        fprintf(stderr, "ERROR: could not allocate memory for file: %s\n", strerror(errno));
-        exit(1);
-    }
-	
-    // * Set the file location to the start of file
-    if (fseek(f, 0, SEEK_SET) < 0) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
-        exit(1);
-    }
-
-    // * Read from 0 to 'm' bytes (i.e. from Start to End of file in buffer)
-    size_t n = fread(buffer, 1, (size_t)m, f);
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: could not read file `%s`: %s\n", file_path_cstr, strerror(errno));
-        exit(1);
-    }
-
-    fclose(f);
-    
-    return  (String_View) { .count = n, .data = buffer };
 }
 
 #endif // BM_IMPLEMENTATION
