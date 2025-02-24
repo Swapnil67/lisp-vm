@@ -1383,6 +1383,8 @@ void print_unresolved_names(const Basm *basm) {
 
 // * Allocate `size` bytes in arena
 void *arena_alloc(Arena *arena, size_t size) {
+    // printf("arena->size: %ld\n", arena->size);    
+    // printf("size: %ld\n", size);
     assert(arena->size + size <= BASM_ARENA_CAPACITY);
     void *result = arena->buffer + arena->size;
     arena->size += size;
@@ -1390,6 +1392,8 @@ void *arena_alloc(Arena *arena, size_t size) {
 }
 
 const char *arena_sv_to_cstr(Arena *arena, String_View sv) {
+    // printf("arena->size: %ld\n", arena->size);
+    // printf("sv->count: %ld\n", sv.count);
     assert(arena->size + (sv.count + 1) <= BASM_ARENA_CAPACITY);
 
     // bring the pointer to the last address in arena
