@@ -80,6 +80,28 @@ static const char *parse_cstr_value(const char *flag, int *argc, char ***argv) {
     return shift(argc, argv);
 }
 
+static void compare_outputs(String_View expected, String_View actual) {
+    for(size_t line_number = 0; expected.count > 0 && actual.count > 0; line_number++) {
+	String_View expected_line = sv_chop_by_delim(&expected, '\n');
+	String_View actual_line = sv_chop_by_delim(&actual, '\n');
+
+	if(!sv_eq(expected_line, actual_line)) {
+	    fprintf(stderr, "Expected output differs from the actual one.\n");
+	    fprintf(stderr, "    Expected line %zu: `"SV_Fmt"`\n", line_number, SV_Arg(expected_line));
+	    fprintf(stderr, "    Actual line   %zu: `"SV_Fmt"`\n", line_number, SV_Arg(actual_line));
+	    exit(1);
+	}
+    }
+
+    if(expected.count > 0) {
+	panic("Expected output is bigger");
+    }
+
+    if(actual.count > 0) {
+	panic("Actual output is bigger");
+    }
+}
+
 int main(int argc, char *argv[]) {
     
     shift(&argc, &argv);        // Skip the program name
@@ -122,8 +144,8 @@ int main(int argc, char *argv[]) {
     bm.natives_size = 8;
     bm.natives[7] = bmr_write;
 
+    // * This will execute the program and will save it to `actual_arena` using `bmr_write`
     Err err = bm_execute_program(&bm, -1);
-    // bm_dump_stack(&bm);
     if (err != ERR_OK) {
 	panic(err_as_cstr(err));
     }
@@ -152,14 +174,9 @@ int main(int argc, char *argv[]) {
 
 	// printf("Expected o/p: %.*s\n", expected_output);
 	// printf("Actual o/p: %.*s\n", actual_output);
-	
-	if(!sv_eq(expected_output, actual_output)) {
-	    panic("expected output is not equal to the actual output");
-	}
-	else {
-	    printf("Expected output\n");
-	}
-	
+
+	compare_outputs(expected_output, actual_output);
+	printf("Expected Output\n");
     }
 
     return 0;
