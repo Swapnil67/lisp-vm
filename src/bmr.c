@@ -80,15 +80,15 @@ static const char *parse_cstr_value(const char *flag, int *argc, char ***argv) {
     return shift(argc, argv);
 }
 
-static void compare_outputs(String_View expected, String_View actual) {
-    for(size_t line_number = 0; expected.count > 0 && actual.count > 0; line_number++) {
+static void compare_outputs(const char *file_path, String_View expected, String_View actual) {
+    for(size_t line_number = 1; expected.count > 0 && actual.count > 0; line_number++) {
 	String_View expected_line = sv_chop_by_delim(&expected, '\n');
 	String_View actual_line = sv_chop_by_delim(&actual, '\n');
 
 	if(!sv_eq(expected_line, actual_line)) {
-	    fprintf(stderr, "Expected output differs from the actual one.\n");
-	    fprintf(stderr, "    Expected line %zu: `"SV_Fmt"`\n", line_number, SV_Arg(expected_line));
-	    fprintf(stderr, "    Actual line   %zu: `"SV_Fmt"`\n", line_number, SV_Arg(actual_line));
+	    fprintf(stderr, "%s:%zu: ERROR: Expected output differs from the actual one.\n", file_path, line_number);
+	    fprintf(stderr, "    Expected line :`"SV_Fmt"`\n", SV_Arg(expected_line));
+	    fprintf(stderr, "    Actual line   : `"SV_Fmt"`\n", SV_Arg(actual_line));
 	    exit(1);
 	}
     }
@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
 	// printf("Expected o/p: %.*s\n", expected_output);
 	// printf("Actual o/p: %.*s\n", actual_output);
 
-	compare_outputs(expected_output, actual_output);
+	compare_outputs(expected_output_file_path, expected_output, actual_output);
 	printf("Expected Output\n");
     }
 
