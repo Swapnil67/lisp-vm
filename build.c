@@ -1,6 +1,6 @@
 #include "./build.h"
 
-#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes" ,"-Wconversion" "-fno-strict-aliasing", "-std=c11", "-pedantic"
+#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes" ,"-Wconversion", "-fno-strict-aliasing", "-ggdb", "-std=c11", "-pedantic"
 
 
 const char *toolchain[] = {
@@ -8,18 +8,20 @@ const char *toolchain[] = {
 };  
 
 int main() {
+    // CMD("cd ", PATH("build", "bin"));
     MKDIRS("build", "bin");
     
     FOREACH_ARRAY(const char *, tool, toolchain, {
-	printf("Building %s...\n", CONCAT(tool, ".c"));
-	// CMD(CFLAGS, "-o",
-	//     PATH("build", "bin", tool)
-	//     PATH("src", CONCAT(tool, ".c")));
+	CMD("cc", CFLAGS, "-o",
+	    PATH("build", "bin", tool),
+	    PATH("src", CONCAT(tool, ".c")));
 	});
 
+	MKDIRS("build", "examples");
+	
 #if 0
 
-    MKDIRS("build", "examples");	
+
     FOREACH_FILE_IN_DIRS(example, "examples", {
         size_t n = strlen(example);
 	assert(n >= 4);
