@@ -7,35 +7,51 @@ const char *toolchain[] = {
     "basm", "bme", "bmr", "debasm", "basm2amd64"
 };  
 
-int main() {
-    // CMD("cd ", PATH("build", "bin"));
+
+#ifdef _WIN32
+void build_c_file(const char *input_file, const char *output_file) {
+    CMD("cl.exe", CFLAGS, "-o", output_file, input_file);
+}
+#else
+void build_c_file(const char *input_file, const char *output_file)
+{
+    CMD("cc", CFLAGS, input_file);
+}    
+#endif // _WIN32
+
+
+void build_toolchain() {
     MKDIRS("build", "bin");
     
     FOREACH_ARRAY(const char *, tool, toolchain, {
-	CMD("cc", CFLAGS, "-o",
-	    PATH("build", "bin", tool),
-	    PATH("src", CONCAT(tool, ".c")));
-	});
+	build_c_file(PATH("src", CONCAT(tool, ".c")), PATH("build", "bin", tool));
+    });
 
-	MKDIRS("build", "examples");
-	
-#if 0
+}
+
+void build_examples() {
+    MKDIRS("build", "examples");
 
 
     FOREACH_FILE_IN_DIRS(example, "examples", {
         size_t n = strlen(example);
-	assert(n >= 4);
-	if(strcmp(example + n - 4, "basm") == 0) {
-	    cmd(PATH("build", "bin", "basm")
-	        "-g",
-		example,
-		PATH("build", CONCAT(example, ".bm"))); 
-	});	
-    }
-    
-	    
-#endif
-    
+	if(*example != '.') {
+	    assert(n >= 4);	 
+	    // * Compare only basm files
+	    if(strcmp(example + n - 4, "basm") == 0) {
+		printf("Building %s...\n", example);
+		CMD(PATH("build", "bin", "basm"),
+		PATH("examples", example),
+		     PATH("build", CONCAT(example, ".bm"))); 
+	    }
+	}
+    });
+        
+}
+
+int main() {
+    build_toolchain();
+    build_examples();
     return 0;
 }
 

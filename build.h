@@ -7,8 +7,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
-#define PATH_SEP "/"
+#ifdef _WIN32
+#    define PATH_SEP "\\"
+#else
+#    define PATH_SEP "/"
+#endif // _WIN32 
+
 #define PATH_SEP_SIZE (sizeof(PATH_SEP) - 1)
 
 #define FOREACH_VARGS(param, arg, args, body)		\
@@ -32,6 +38,17 @@ do {						\
         type item = items[i];			\
         body;					\   
     }						\
+} while(0)
+
+
+#define FOREACH_FILE_IN_DIRS(file, dirpath, body)	\
+do {							\
+    struct dirent *dp = NULL;				\
+    DIR *dir = opendir(dirpath);			\
+    while(dp = readdir(dir)) {				\
+	const char *file = dp->d_name;			\
+	body;						\
+    }							\
 } while(0)
 
 
