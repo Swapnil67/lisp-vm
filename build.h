@@ -8,6 +8,7 @@
 #ifdef _WIN32
 #    define WIN32_LEAN_AND_MEAN
 #    include "windows.h"
+#    include "process.h"
 #else
 #    include <unistd.h>
 #    include <sys/stat.h>
@@ -182,25 +183,16 @@ const char *concat_impl(int ignore, ...) {
 
 #define CONCAT(...) concat_impl(69, __VA_ARGS__, NULL)
 
-void cmd_impl(int ignore, ...) {
 
-    size_t argc = 0;
-    
-    va_list args;
-    FOREACH_VARGS(ignore, arg, args, {
-	argc += 1;
-    });
-
-    // sizeof(const char *) = 8
-    const char **argv = malloc(sizeof(const char *) * (argc + 1));
-
-    argc = 0;    
-    FOREACH_VARGS(ignore, arg, args, {
-	argv[argc++] = arg;
-    });
-
-    assert(argc >= 1);
-
+#ifdef _WIN32
+void build_h_exec(const char *argv[]) {
+    if(_execvp(argv[0], (char * const*)argv)) {
+	fprintf(stderr, "[ERROR] could not execute child process: %s\n", strerror(errno));
+	exit(1);
+    }
+}
+#else
+void build_h_exec(const char *argv[]) {
     pid_t pid = fork();
     if(pid == -1) {
 	fprintf(stderr, "[ERROR] could not fork a child process: %s\n", strerror(errno));
@@ -216,7 +208,32 @@ void cmd_impl(int ignore, ...) {
     else {
 	wait(NULL);
     }
+}
+#endif // _WIN32
 
+void cmd_impl(int ignore, ...) {
+
+    size_t argc = 0;
+    
+    va_list args;
+    FOREACH_VARGS(ignore, arg, args, {
+	// printf("Argv: %s\n", arg);
+	argc += 1;
+    });
+
+    // printf("argc: %d\n", argc);
+    
+    // sizeof(const char *) = 8
+    const char **argv = malloc(sizeof(const char *) * (argc + 1));
+
+    argc = 0;    
+    FOREACH_VARGS(ignore, arg, args, {
+	// printf("Argv: %s\n", arg);	
+	argv[argc++] = arg;
+    });
+
+    assert(argc >= 1);
+    build_h_exec(argv);
 }
 
 #define CMD(...)					\

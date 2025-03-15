@@ -36,7 +36,6 @@ void build_toolchain() {
 void build_examples() {
     MKDIRS("build", "examples");
 
-
     FOREACH_FILE_IN_DIRS(example, "examples", {
         size_t n = strlen(example);
 	if(*example != '.') {
@@ -44,8 +43,8 @@ void build_examples() {
 	    // * Compare only basm files
 	    if(strcmp(example + n - 4, "basm") == 0) {
 		CMD(PATH("build", "bin", "basm"),
-		PATH("examples", example),
-		     PATH("build", CONCAT(example, ".bm"))); 
+		    PATH("examples", example),
+		    PATH("build", CONCAT(example, ".bm"))); 
 	    }
 	}
     });
