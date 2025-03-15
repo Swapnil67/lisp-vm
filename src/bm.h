@@ -26,6 +26,7 @@
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_EXECUTION_LIMIT 69
 #define BASM_BINDINGS_CAPACITY 1024
+#define BASM_STRING_PLACES_CAPACITY 1024
 #define DEFERED_OPERANDS_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
 #define BM_MEMORY_CAPACITY (640 * 1000) // * 640KB
@@ -292,6 +293,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 
+bool basm_size_of_string(const Basm *basm, Memory_Addr addr, Word *size);
+
 void bm_load_standard_natives(Bm *bm);
 
 Err native_alloc(Bm *bm);
@@ -308,18 +311,22 @@ Err native_write(Bm *bm);
 
 #ifdef BM_IMPLEMENTATION
 
+// * Return word from u64
 Word word_u64(uint64_t u64) {
     return (Word) { .as_u64 = u64 };
 }
 
+// * Return word from i64
 Word word_i64(int64_t i64) {
     return (Word) { .as_i64 = i64 };
 }
 
+// * Return word from f64
 Word word_f64(double f64) {
     return (Word) { .as_f64 = f64 };
 }
 
+// * Return word from ptr
 Word word_ptr(void *ptr) {
     return (Word) { .as_ptr = ptr };
 }
@@ -1578,12 +1585,12 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv) {
     // * copy sv.count amount of bytes to basm->memory buffer
     memcpy(basm->memory + basm->memory_size, sv.data, sv.count);
 
+    // * Increase the total size of memeory
     basm->memory_size += sv.count;
 
     if(basm->memory_size > basm->memory_capacity) {
 	basm->memory_capacity = basm->memory_size;
     }
-
     return result;
 }
 
@@ -1595,7 +1602,8 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output) {
 	}
 	*output = word_u64((uint64_t)sv.data[1]);
 	return true;
-    } else if(sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
+    }
+    else if(sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
 	// * Encounter String
 	sv.data += 1;
 	sv.count -= 2;

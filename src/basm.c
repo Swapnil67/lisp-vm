@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     // * Save the executable
     basm_save_to_file(&basm, output_file_path);
 
-    printf("%zd Bytes of memory used\n ", basm.arena.size);
+    // printf("%zd Bytes of memory used\n ", basm.arena.size);
 		         
     return 0;
 }
