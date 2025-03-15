@@ -1,7 +1,11 @@
 #include "./build.h"
 
-#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes" ,"-Wconversion", "-fno-strict-aliasing", "-ggdb", "-std=c11", "-pedantic"
 
+#ifdef _WIN32
+#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/wd5105", "/nologo"
+#else
+#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes" ,"-Wconversion", "-Wno-missing-braces",  "-fno-strict-aliasing", "-ggdb", "-std=c11", "-pedantic"
+#endif // _WIN32
 
 const char *toolchain[] = {
     "basm", "bme", "bmr", "debasm", "basm2amd64"
@@ -39,7 +43,6 @@ void build_examples() {
 	    assert(n >= 4);	 
 	    // * Compare only basm files
 	    if(strcmp(example + n - 4, "basm") == 0) {
-		printf("Building %s...\n", example);
 		CMD(PATH("build", "bin", "basm"),
 		PATH("examples", example),
 		     PATH("build", CONCAT(example, ".bm"))); 
