@@ -4,10 +4,17 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <dirent.h>
+
+#ifdef _WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include "windows.h"
+#else
+#    include <unistd.h>
+#    include <sys/stat.h>
+#    include <sys/wait.h>
+#    include <dirent.h>
+#endif // _WIN32
+
 
 #ifdef _WIN32
 #    define PATH_SEP "\\"
