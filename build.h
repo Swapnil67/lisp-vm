@@ -316,3 +316,23 @@ do {							\
 printf("[INFO] %s\n", CONCAT_SEP(" ", __VA_ARGS__));	\
 cmd_impl(69, __VA_ARGS__, NULL);			\
 } while(0)    
+
+
+// * Remove extension from the filepath
+const char *remove_ext(const char *path) {
+    size_t n = strlen(path);
+
+    // * Loop from back till we find '.'
+    while(n > 0 && path[n] != '.') {
+	n -= 1;
+    }
+
+    if(n > 0) {
+	char *result = malloc(n + 1);
+	memcpy(result, path, n);
+	result[n] = '\0';
+	return result;
+    }
+
+    return path;
+}

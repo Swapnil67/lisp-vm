@@ -133,9 +133,11 @@ int main(int argc, char *argv[]) {
     // * Check no file provided at all
     if(actual_output_file_path == NULL && expected_output_file_path == NULL) {
 	usage(stderr);
-	panic("at least -ao pr -eo is expected");
+	panic("at least -ao or -eo is expected");
     }
-    
+
+    // printf("ip: %s, op: %s\n", actual_output_file_path, expected_output_file_path);
+   
     // * NOTE: The structure might be quite big due to it's arena. Better to allocate it in the static memory.
     static Bm bm = {0};
 
@@ -161,7 +163,7 @@ int main(int argc, char *argv[]) {
 	// * write to file
 	fwrite(actual_arena.buffer, sizeof(actual_arena.buffer[0]), actual_arena.size, output_file_fd);
 	if(ferror(output_file_fd)) {
-	    panic_error("ERROR: could not save output to file `%s`", expected_output_file_path);
+	    panic_error("ERROR: could not save output to file `%s`", actual_output_file_path);
 	}
 
 	fclose(output_file_fd);
@@ -176,7 +178,7 @@ int main(int argc, char *argv[]) {
 	// printf("Actual o/p: %.*s\n", actual_output);
 
 	compare_outputs(expected_output_file_path, expected_output, actual_output);
-	printf("Expected Output\n");
+	// printf("Expected Output\n");
     }
 
     return 0;

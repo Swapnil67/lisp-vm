@@ -19,13 +19,15 @@ void build_c_file(const char *input_file, const char *output_file) {
 #else
 void build_c_file(const char *input_file, const char *output_file)
 {
-    CMD("cc", CFLAGS, input_file);
+    // printf("ip: %s, op: %s\n", input_file, output_file);
+    CMD("cc", CFLAGS, "-o", output_file, input_file);
 }    
 #endif // _WIN32
 
 
 void build_toolchain() {
     MKDIRS("build", "bin");
+    MKDIRS("test", "examples");
     
     FOREACH_ARRAY(const char *, tool, toolchain, {
 	build_c_file(PATH("src", CONCAT(tool, ".c")), PATH("build", "bin", tool));
@@ -42,18 +44,36 @@ void build_examples() {
 	    assert(n >= 4);	 
 	    // * Compare only basm files
 	    if(strcmp(example + n - 4, "basm") == 0) {
+		const char *example_base = remove_ext(example); // test.basm => test		
 		CMD(PATH("build", "bin", "basm"),
 		    PATH("examples", example),
-		    PATH("build", CONCAT(example, ".bm"))); 
+		    PATH("build", "examples", CONCAT(example_base, ".bm"))); 
 	    }
 	}
     });
         
 }
 
+void run_test() {
+    FOREACH_FILE_IN_DIRS(example, "examples", {
+        size_t n = strlen(example);
+	if(*example != '.') {
+	    assert(n >= 4);	 
+	    // * Compare only basm files
+	    if(strcmp(example + n - 4, "basm") == 0) {
+		const char *example_base = remove_ext(example); // test.basm => test
+		CMD(PATH("build", "bin", "bmr"),
+		    "-p",  PATH("build", "examples", CONCAT(example_base, ".bm")),
+		    "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out"))); 
+	    }
+	}
+    });
+}
+
 int main() {
     build_toolchain();
     build_examples();
+    run_test();
     return 0;
 }
 
