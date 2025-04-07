@@ -35,7 +35,8 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
-#define BASM_ARENA_CAPACITY (100 * 1000 * 1000) // * 100MB
+// #define BASM_ARENA_CAPACITY (100 * 1000 * 1000) // * 100MB
+#define BASM_ARENA_CAPACITY (640 * 1000) // * 640KB
 
 typedef enum {
     ERR_OK = 0,
