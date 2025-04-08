@@ -254,8 +254,6 @@ const char *concat_impl(int ignore, ...) {
 
 #define CONCAT(...) concat_impl(69, __VA_ARGS__, NULL)
 
-
-
 void nobuild_exec(const char *argv[]) {
     #ifdef _WIN32
     if(_spwanvp(_P_WAIT, argv[0], (char * const*)argv)) {
@@ -276,7 +274,23 @@ void nobuild_exec(const char *argv[]) {
 	}
     }
     else {
-	wait(NULL);
+	for(;;) {
+	    int stat_loc = 0;
+	    wait(&stat_loc);
+	    if(WIFEXITED(stat_loc)) {
+		int exit_status = WEXITSTATUS(stat_loc);
+		if(exit_status != 0) {
+		    fprintf(stderr, "[ERROR] command exited with %d exit status.\n", exit_status);
+		    exit(-1);
+		}
+		break;
+	    }
+
+	    if(WIFSIGNALED(stat_loc)) {
+		fprintf(stderr, "[ERROR] command process was terminated by %d signal.\n", WTERMSIG(stat_loc));
+		exit(-1);
+	    }
+	}
     }
     #endif // _WIN32
 }

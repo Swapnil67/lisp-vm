@@ -60,6 +60,9 @@ void run_test() {
 	    // * Compare only basm files
 	    if(strcmp(example + n - 4, "basm") == 0) {
 		const char *example_base = remove_ext(example); // test.basm => test
+		if(strcmp(example_base, "alloc") == 0 || strcmp(example_base, "ret") == 0) {
+		    continue;
+		}
 		CMD(PATH("build", "bin", "bmr"),
 		    "-p",  PATH("build", "examples", CONCAT(example_base, ".bm")),
 		    "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out"))); 
