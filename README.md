@@ -2,9 +2,21 @@
 
 ## Quick Start
 
- ```console
-$ ./build.sh
+### Build on Linux/MacOS/FreeBSD
+```console
+$ cc -o nobuild nobuild.c
+$ ./nobuild
+```
 
+### Build on Windows
+```console
+> cl.exe nobuild.c
+> nobuild.exe
+```
+
+### Running Examples
+
+```console
 $ ./bme -i ./examples/fib.bm
 $ ./bme -i ./examples/e.bm 
 $ ./bme -i ./examples/lerp.bm 
