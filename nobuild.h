@@ -256,11 +256,19 @@ const char *concat_impl(int ignore, ...) {
 
 void nobuild_exec(const char *argv[]) {
     #ifdef _WIN32
-    if(_spwanvp(_P_WAIT, argv[0], (char * const*)argv)) {
-	fprintf(stderr, "[ERROR] could not execute child process: %s\n", strerror(errno));
+    // * https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/spawnvp-wspawnvp?view=msvc-170
+    intptr_t status = _spwanvp(_P_WAIT, argv[0], (char * const*)argv);
+    if(status < 0) {
+	fprintf(stderr, "[ERROR] could not start child process: %s\n", strerror(errno));
 	exit(1);
     }
-    #else
+
+    if(status > 0) {
+	fprintf(stderr, "[ERROR] command exited with exit code: %d\n", status);
+	exit(1);	
+    }
+    
+#else
     pid_t pid = fork();    
     if(pid == -1) {
 	fprintf(stderr, "[ERROR] could not fork a child process: %s\n", strerror(errno));
@@ -274,6 +282,7 @@ void nobuild_exec(const char *argv[]) {
 	}
     }
     else {
+	// * Exit the program and show message if any of the child process or test case failed
 	for(;;) {
 	    int stat_loc = 0;
 	    wait(&stat_loc);
@@ -292,7 +301,7 @@ void nobuild_exec(const char *argv[]) {
 	    }
 	}
     }
-    #endif // _WIN32
+#endif // _WIN32
 }
 
 void cmd_impl(int ignore, ...) {
