@@ -12,17 +12,15 @@ const char *toolchain[] = {
 };  
 
 
-#ifdef _WIN32
 void build_c_file(const char *input_file, const char *output_file) {
-    CMD("cl.exe", CFLAGS, "-o", output_file, input_file);
-}
-#else
-void build_c_file(const char *input_file, const char *output_file)
-{
     // printf("ip: %s, op: %s\n", input_file, output_file);
+#ifdef _WIN32    
+    CMD("cl.exe", CFLAGS, "-o", output_file, input_file);
+#else
     CMD("cc", CFLAGS, "-o", output_file, input_file);
-}    
 #endif // _WIN32
+}
+
 
 
 void build_toolchain() {

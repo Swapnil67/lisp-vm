@@ -255,16 +255,15 @@ const char *concat_impl(int ignore, ...) {
 #define CONCAT(...) concat_impl(69, __VA_ARGS__, NULL)
 
 
-#ifdef _WIN32
-void build_h_exec(const char *argv[]) {
+
+void nobuild_exec(const char *argv[]) {
+    #ifdef _WIN32
     if(_spwanvp(_P_WAIT, argv[0], (char * const*)argv)) {
 	fprintf(stderr, "[ERROR] could not execute child process: %s\n", strerror(errno));
 	exit(1);
     }
-}
-#else
-void build_h_exec(const char *argv[]) {
-    pid_t pid = fork();
+    #else
+    pid_t pid = fork();    
     if(pid == -1) {
 	fprintf(stderr, "[ERROR] could not fork a child process: %s\n", strerror(errno));
 	exit(1);
@@ -279,8 +278,8 @@ void build_h_exec(const char *argv[]) {
     else {
 	wait(NULL);
     }
+    #endif // _WIN32
 }
-#endif // _WIN32
 
 void cmd_impl(int ignore, ...) {
 
@@ -308,7 +307,7 @@ void cmd_impl(int ignore, ...) {
     argv[argc] = NULL;
 
     assert(argc >= 1);
-    build_h_exec(argv);
+    nobuild_exec(argv);
 }
 
 #define CMD(...)					\
