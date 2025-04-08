@@ -115,7 +115,7 @@ do {						\
         i < sizeof(items) / sizeof((items)[0]);	\
         ++i) {					\
         type item = items[i];			\
-        body;					\   
+        body;					\
     }						\
 } while(0)
 
